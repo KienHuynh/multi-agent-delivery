@@ -80,6 +80,12 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 }
 
 
+void GUI::solverCallback(Fl_Widget*w, void*data) {
+	Canvas::scenario.solve(ECLD_2D_DYNAMIC);
+	canvas->redraw();
+}
+
+
 void Canvas::fl_normal_line(float x, float y, float x1, float y1) {
 	fl_line(x, canvasHeight - y, x1, canvasHeight - y1);
 }
@@ -265,6 +271,24 @@ void Canvas::drawTargets() {
 }
 
 
+void Canvas::drawAgentsInTime() {
+	for (int i = 0; i < scenario.agents.size(); i++) {
+		float x = scenario.agents[i].loc.x;
+		float y = scenario.agents[i].loc.y;
+		// Get the direction
+		//Point2D dir = scenario
+		scenToCanvasCoord(x, y);
+		float v = scenario.agents[i].v;
+
+		// Assign the color based on the velocity and the max/min speed in the scenario
+		int color = 255 * (v - scenario.minSpeed) / (scenario.maxSpeed - scenario.minSpeed);
+		fl_color(fl_rgb_color(color, 25, 25));
+
+		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+	}
+}
+
+
 void Canvas::draw() {
 
 	if (GUI::bigRedrawSignal) {
@@ -294,6 +318,8 @@ void Canvas::draw() {
 	drawAgents();
 	drawPackages();
 	drawTargets();
+	
+
 }
 
 
@@ -341,7 +367,7 @@ GUI::GUI(int winWidth, int winHeight) {
 
 	// Assign callbacks to corresponding buttons
 	runAllBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit, 160, 25, "Run");
-	//runAllBu->callback(maximumAreaCallback);
+	runAllBu->callback(solverCallback);
 	runStepBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, 25, "Step");
 	//runStepBu->callback(maximumAreaCallbackStep);
 	clearBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 3, 160, 25, "Clear");

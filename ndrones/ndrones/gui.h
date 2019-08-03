@@ -49,6 +49,9 @@ protected:
 	// Draw the agents
 	void drawAgents();
 
+	// Draw the agents in time
+	void drawAgentsInTime();
+
 	// Draw the packages
 	void drawPackages();
 
@@ -80,6 +83,7 @@ public:
 
 	// The scenario to be demo'd
 	static Scenario scenario;
+	static float timer;
 
 	Canvas(int X, int Y, int W, int H, const char *L);
 	~Canvas();
@@ -115,6 +119,8 @@ public:
 	static void browseCallback(Fl_Widget*w, void*data);
 	// Callback function for save button
 	static void saveResultCallback(Fl_Widget*w, void*data);
+	// Callback for the solver
+	static void solverCallback(Fl_Widget*w, void*data);
 
 };
 
