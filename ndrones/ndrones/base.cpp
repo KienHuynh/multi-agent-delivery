@@ -55,7 +55,6 @@ void Scenario::loadFile(const char* fname) {
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
 
-	int minX = 0, minY = 0, maxX = 0, maxY = 0;
 	int nPackage = 0, nTarget = 0, nAgent = 0;
 
 	myfile >> minX >> maxX >> minY >> maxY;

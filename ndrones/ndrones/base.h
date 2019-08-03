@@ -69,6 +69,7 @@ class Scenario {
 public:
 	std::vector<Agent> agents;
 	float maxSpeed, minSpeed;
+	int minX, maxX, minY, maxY;
 	std::vector<Point2D> points;
 	std::vector<Package> packages;
 	std::vector<Target> targets;
