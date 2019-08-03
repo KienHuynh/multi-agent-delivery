@@ -58,8 +58,11 @@ protected:
 	// The main draw function of canvas
 	void draw();
 
-	// Convert 0-1 coords to canvas coord
-	void toCanvasCoord(float &x, float &y);
+	// Convert scenario coords to canvas coord
+	void scenToCanvasCoord(float &x, float &y);
+
+	// Convert canvas coords to scenario coord
+	void canvasToScenCoord(float &x, float &y);
 
 public:
 	// Box to display the background image

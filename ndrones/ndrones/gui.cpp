@@ -168,18 +168,25 @@ int Canvas::handle(int e) {
 }
 
 
-void Canvas::toCanvasCoord(float &x, float &y) {
-	x = x + origin;
-	y = canvasHeight - (y + origin);
+void Canvas::scenToCanvasCoord(float &x, float &y) {
+	x = x*canvasWidth / ((float)(scenario.maxX - scenario.minX));
+	y = canvasHeight - (y*canvasHeight / ((float) (scenario.maxY - scenario.minY)));
 }
 
+
+void Canvas::canvasToScenCoord(float &x, float &y) {
+	x = x * ((float)(scenario.maxX - scenario.minX)) / canvasWidth;
+	y = canvasHeight - y;
+	y = y * ((float)(scenario.maxY - scenario.minY)) / canvasHeight;
+}
 
 
 void Canvas::drawCoords() {
 	// Coordinates as a string
 	char s[80];
-	float x = (float)Fl::event_x() - origin;
-	float y = canvasHeight - (float)Fl::event_y() - origin;
+	float x = (float)Fl::event_x();
+	float y = (float)Fl::event_y();
+	canvasToScenCoord(x, y);
 	sprintf_s(s, "x=%.3f y=%.3f", x, y);
 	// Black rect
 	fl_color(FL_BLACK);
@@ -224,13 +231,35 @@ void Canvas::drawAgents() {
 	for (int i = 0; i < scenario.agents.size(); i++) {
 		float x = scenario.agents[i].loc.x;
 		float y = scenario.agents[i].loc.y;
-		toCanvasCoord(x, y);
+		scenToCanvasCoord(x, y);
 		float v = scenario.agents[i].v;
 
 		// Assign the color based on the velocity and the max/min speed in the scenario
 		int color = 255*(v - scenario.minSpeed) / (scenario.maxSpeed - scenario.minSpeed);
 		fl_color(fl_rgb_color(color, 25, 25));
 
+		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+	}
+}
+
+
+void Canvas::drawPackages() {
+	for (int i = 0; i < scenario.packages.size(); i++) {
+		float x = scenario.packages[i].loc0.x;
+		float y = scenario.packages[i].loc0.y;
+		scenToCanvasCoord(x, y);
+		fl_color(25, 255, 25);
+		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+	}
+}
+
+
+void Canvas::drawTargets() {
+	for (int i = 0; i < scenario.targets.size(); i++) {
+		float x = scenario.targets[i].loc.x;
+		float y = scenario.targets[i].loc.y;
+		scenToCanvasCoord(x, y);
+		fl_color(25, 25, 255);
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 	}
 }
@@ -260,9 +289,11 @@ void Canvas::draw() {
 	}
 
 
-	drawAxes();
+	//drawAxes();
 	drawCoords();
 	drawAgents();
+	drawPackages();
+	drawTargets();
 }
 
 
