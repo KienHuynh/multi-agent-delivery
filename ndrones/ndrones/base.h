@@ -97,11 +97,19 @@ public:
 	bool active;
 
 	LineAnimation();
+	void setColor(int, int, int);
 };
 
 
 class Scenario {
 public:
+	// TODO: use bit flag
+	// n drones deliver 1 package from point (s) to point (s)
+	// n drones deliver m packages from point (s) to point (s), all designated points have the same roles
+	// n drones deliver m packages from point (s) to point (s), each point is unique
+	int problemType;
+	int solverType;
+
 	std::vector<Agent> agents;
 	std::vector<std::vector<LineAnimation>> anis;
 
@@ -124,10 +132,21 @@ public:
 	// Load scenario from file
 	void loadFile(const char*);
 
+	// Check if a point is a package
+	// TODO: use better data structure?
+	bool isPackage(int);
+	
 	// Euclidean 2D dynamic solver for 1-drone-1-package
 	void ecld2DDynamicSolve11();
+	void ecld2DDynamicSolveNN();
+
 	// Create an animation based on the solution
-	void createAnimation(Solver);
-	void solve(Solver);
+	void createAnimation();
+	void solve();
+
+private:
+	// This is used to load target points or package points
+	void loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
+		std::vector<PointState> &points);
 };
 

@@ -81,8 +81,8 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 
 
 void GUI::solverCallback(Fl_Widget*w, void*data) {
-	Canvas::scenario.solve(ECLD_2D_DYNAMIC);
-	Canvas::scenario.createAnimation(ECLD_2D_DYNAMIC);
+	Canvas::scenario.solve();
+	Canvas::scenario.createAnimation();
 	Canvas::scenario.aniStart = true;
 	auto now = std::chrono::system_clock::now().time_since_epoch();
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();

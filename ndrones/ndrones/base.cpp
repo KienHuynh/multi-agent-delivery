@@ -109,10 +109,8 @@ bool Agent::operator<(Agent const &obj) {
 // Load points such as packages and targets
 // If a point already exists in the grid above, re-use it
 // Otherwise, add a new point to the grid
-void loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, std::vector<int> &idx, 
-	std::vector<PointState> &points) {
-	int nDPoint = 0;
-	myfile >> nDPoint;
+void Scenario::loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, 
+	std::vector<int> &idx, std::vector<PointState> &points) {
 
 	for (int i = 0; i < nDPoint; i++) {
 		int x, y;
@@ -137,8 +135,16 @@ void loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dP
 
 
 void Scenario::loadFile(const char* fname) {
+
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
+	
+	myfile >> problemType;
+	myfile >> solverType;
+
+	// Specify whether the inputs will be in regional (polygon) format or discrete points format
+	int packageInputMode = 0;
+	int targetInputMode = 0;
 
 	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
 	int stepX, stepY;
@@ -151,8 +157,24 @@ void Scenario::loadFile(const char* fname) {
 		}
 	}
 
-	loadDesignatedPoint(myfile, packages, packageIdx, points);
-	loadDesignatedPoint(myfile, targets, targetIdx, points);
+	myfile >> packageInputMode;
+	if (packageInputMode == 0) {
+		myfile >> nPackage;
+		loadDesignatedPoint(myfile, packages, nPackage, packageIdx, points);
+	}
+	else if (packageInputMode == 1) {
+		// TODO
+	}
+
+	myfile >> targetInputMode;
+	if (targetInputMode == 0) {
+		myfile >> nTarget;
+		loadDesignatedPoint(myfile, targets, nTarget, targetIdx, points);
+	}
+	else if (targetInputMode == 1) {
+
+	}
+
 
 	myfile >> nAgent;
 	maxSpeed = -1;
@@ -186,6 +208,70 @@ float max(float x, float y) {
 }
 
 
+bool Scenario::isPackage(int id) {
+	for (int ip = 0; ip < packages.size(); ip++) {
+		if (id == packageIdx[ip]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
+void Scenario::ecld2DDynamicSolveNN() {
+	// First run with the slowest drone
+	// Compute the best time it takes for this drone to get to a package and fly to any other point on the grid
+	for (int i = 0; i < points.size(); i++) {
+		if (isPackage(i)) continue;
+
+		float bestTime = -1;
+		int bestPackageID = packageIdx[0];
+		for (int ip = 0; ip < packages.size(); ip++) {
+			PointState ps_ip = points[packageIdx[ip]];
+			float time = agents[0].timing(ps_ip.p) + agents[0].timing(ps_ip.p, points[i].p);
+
+			if (bestTime == -1 or bestTime > time) {
+				bestTime = time;
+				bestPackageID = packageIdx[ip];
+			}
+		}
+
+		points[i].agentQueue.push_back(agents[0]);
+		points[i].bestTime = bestTime;
+		points[i].pointQueue.push_back(points[bestPackageID].p);
+	}
+
+	for (int k = 1; k < agents.size(); k++) {
+		std::vector<PointState> pointsCopy = points;
+		for (int i = 0; i < points.size(); i++) {
+			if (isPackage(i)) continue;
+			
+			int best_j = -1;
+			if (i % 10 == 0) std::cout << i << std::endl;
+			// Find the best handoff point j so that it can travel to i faster
+			for (int j = 0; j < pointsCopy.size(); j++) {
+
+				float timeTo_j = agents[k].timing(pointsCopy[j].p);
+				// Factor in waiting time
+				timeTo_j = max(timeTo_j, pointsCopy[j].bestTime);
+
+				float time_jTo_i = agents[k].timing(pointsCopy[j].p, pointsCopy[i].p);
+				if (timeTo_j + time_jTo_i < points[i].bestTime) {
+					points[i].bestTime = timeTo_j + time_jTo_i;
+					best_j = j;
+				}
+			}
+			if (best_j > -1) {
+				points[i].agentQueue = pointsCopy[best_j].agentQueue;
+				points[i].agentQueue.push_back(agents[k]);
+				points[i].pointQueue = pointsCopy[best_j].pointQueue;
+				points[i].pointQueue.push_back(pointsCopy[best_j].p);
+			}
+		}
+	}
+}
+
+
 void Scenario::ecld2DDynamicSolve11() {
 	// Find the drone that can get to the package in the shortest time
 	float bestTime = agents[0].timing(packages[0].currentLoc);
@@ -215,7 +301,7 @@ void Scenario::ecld2DDynamicSolve11() {
 			for (int j = 0; j < pointsCopy.size(); j++) {
 
 				float timeTo_j = agents[k].timing(pointsCopy[j].p);
-				// Factor waiting time
+				// Factor in waiting time
 				timeTo_j = max(timeTo_j, pointsCopy[j].bestTime);
 				 
 				float time_jTo_i = agents[k].timing(pointsCopy[j].p, pointsCopy[i].p);
@@ -238,13 +324,20 @@ void Scenario::ecld2DDynamicSolve11() {
 }
 
 
+void LineAnimation::setColor(int c0, int c1, int c2) {
+	color[0] = c0;
+	color[1] = c1;
+	color[2] = c2;
+}
+
+
 LineAnimation::LineAnimation() {
 	prevTimer = -1;
 }
 
 
-void Scenario::createAnimation(Solver solver) {
-	if (solver == Solver::ECLD_2D_DYNAMIC) {
+void Scenario::createAnimation() {
+	if (problemType == 0) {
 		std::vector<Agent> agentQ = points[targetIdx[0]].agentQueue;
 		std::vector<Point2D> pointQ = points[targetIdx[0]].pointQueue;
 		for (int i = 0; i < agentQ.size(); i++) {
@@ -252,13 +345,9 @@ void Scenario::createAnimation(Solver solver) {
 			LineAnimation tmpAni0, tmpAni1;
 			std::vector<LineAnimation> tmpAni;
 			if (i < agentQ.size() - 1) {
-				tmpAni0.color[0] = 25;
-				tmpAni0.color[1] = 25;
-				tmpAni0.color[2] = color;
-				tmpAni1.color[0] = 25;
-				tmpAni1.color[1] = 25;
-				tmpAni1.color[2] = color;
-
+				tmpAni0.setColor(25, 25, color);
+				tmpAni1.setColor(25, 25, color);
+				
 				tmpAni0.start = agentQ[i].loc0;
 				tmpAni0.end = pointQ[i];
 				tmpAni0.startTime = 0;
@@ -277,12 +366,8 @@ void Scenario::createAnimation(Solver solver) {
 			// Special treatment for last agent
 			// TODO: trim this down later, redundant code
 			else {
-				tmpAni0.color[0] = 25;
-				tmpAni0.color[1] = 25;
-				tmpAni0.color[2] = color;
-				tmpAni1.color[0] = 25;
-				tmpAni1.color[1] = 25;
-				tmpAni1.color[2] = color;
+				tmpAni0.setColor(25, 25, color);
+				tmpAni1.setColor(25, 25, color);
 
 				tmpAni0.start = agentQ[i].loc0;
 				tmpAni0.end = pointQ[i];
@@ -326,14 +411,13 @@ Scenario::Scenario() {
 }
 
 
-void Scenario::solve(Solver solver) {
-	if (targets.size() == 1) {
-		if (packages.size() == 1) {
-			if (solver == Solver::ECLD_2D_DYNAMIC) {
-				ecld2DDynamicSolve11();
-				int a = 1;
-				a = a + 1;
-			}
+void Scenario::solve() {
+	if (problemType == 0) {
+		if (solverType == 0) {
+			//ecld2DDynamicSolve11();
+			ecld2DDynamicSolveNN();
+			int a = 1;
+			a = a + 1;
 		}
 	}
 }
