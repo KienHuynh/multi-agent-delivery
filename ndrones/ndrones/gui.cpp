@@ -82,6 +82,11 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 
 void GUI::solverCallback(Fl_Widget*w, void*data) {
 	Canvas::scenario.solve(ECLD_2D_DYNAMIC);
+	Canvas::scenario.createAnimation(ECLD_2D_DYNAMIC);
+	Canvas::scenario.aniStart = true;
+	auto now = std::chrono::system_clock::now().time_since_epoch();
+	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+	Canvas::scenario.timer = ((float)mili) / 1000;
 	canvas->redraw();
 }
 
@@ -94,10 +99,8 @@ void Canvas::fl_normal_line(float x, float y, float x1, float y1) {
 // Function to handle mouse events such as drag, release, etc.
 int Canvas::handle(int e) {
 	int ret = Fl_Group::handle(e);
-
 	switch (e) {
-
-		// Mouse events
+	// Mouse events
 	case FL_DRAG: {
 		ret = 0;
 		break;
@@ -170,6 +173,7 @@ int Canvas::handle(int e) {
 	}
 
 	}
+	
 	return(ret);
 }
 
@@ -242,7 +246,7 @@ void Canvas::drawAgents() {
 
 		// Assign the color based on the velocity and the max/min speed in the scenario
 		int color = 255*(v - scenario.minSpeed) / (scenario.maxSpeed - scenario.minSpeed);
-		fl_color(fl_rgb_color(color, 25, 25));
+		fl_color(fl_rgb_color(25, 25, color));
 
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 	}
@@ -251,10 +255,10 @@ void Canvas::drawAgents() {
 
 void Canvas::drawPackages() {
 	for (int i = 0; i < scenario.packages.size(); i++) {
-		float x = scenario.packages[i].loc0.x;
-		float y = scenario.packages[i].loc0.y;
+		float x = scenario.packages[i].loc.x;
+		float y = scenario.packages[i].loc.y;
 		scenToCanvasCoord(x, y);
-		fl_color(25, 255, 25);
+		fl_color(200, 25, 25);
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 	}
 }
@@ -265,27 +269,85 @@ void Canvas::drawTargets() {
 		float x = scenario.targets[i].loc.x;
 		float y = scenario.targets[i].loc.y;
 		scenToCanvasCoord(x, y);
-		fl_color(25, 25, 255);
+		fl_color(25, 200, 25);
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 	}
 }
 
 
-void Canvas::drawAgentsInTime() {
-	for (int i = 0; i < scenario.agents.size(); i++) {
-		float x = scenario.agents[i].loc.x;
-		float y = scenario.agents[i].loc.y;
-		// Get the direction
-		//Point2D dir = scenario
+void Canvas::drawDiscretePoints() {
+	for (int i = 0; i < scenario.points.size(); i++) {
+		float x = scenario.points[i].p.x;
+		float y = scenario.points[i].p.y;
 		scenToCanvasCoord(x, y);
-		float v = scenario.agents[i].v;
-
-		// Assign the color based on the velocity and the max/min speed in the scenario
-		int color = 255 * (v - scenario.minSpeed) / (scenario.maxSpeed - scenario.minSpeed);
-		fl_color(fl_rgb_color(color, 25, 25));
-
+		fl_color(200, 200, 200);
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 	}
+}
+
+
+void Canvas::drawAnimation() {
+	if (!scenario.aniStart) return;
+	auto now = std::chrono::system_clock::now().time_since_epoch();
+	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+	float timeElapsed = ((float)mili / 1000) - scenario.timer;
+	
+	for (int i = 0; i < scenario.anis.size(); i++) {
+		for (int j = 0; j < scenario.anis[i].size(); j++) {
+			LineAnimation ani = scenario.anis[i][j];
+			// TODO: redundant codes
+			if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime) {
+				scenario.anis[i][j].active = true;
+				if (scenario.anis[i][j].prevTimer < 0) {
+					scenario.anis[i][j].prevTimer = timeElapsed;
+					continue;
+				}
+
+				Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+						/ ani.duration) + ani.start;
+				Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
+					/ ani.duration) + ani.start;
+				fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+				fl_line_style(FL_SOLID, 4);
+				scenToCanvasCoord(newP.x, newP.y);
+				scenToCanvasCoord(prevP.x, prevP.y);
+				newP.y = canvasHeight - newP.y;
+				prevP.y = canvasHeight - prevP.y;
+				fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+
+				// Pie
+				// Using linear interpolation to draw new point
+				//Point2D aniLoc = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+				//	/ ani.duration) + ani.start;
+				//fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+				//scenToCanvasCoord(aniLoc.x, aniLoc.y);
+				//fl_pie(((int)newP.x) - 5, ((int)newP.y) - 5, 10, 10, 0, 360);
+				//scenario.anis[i][j].prevTimer = timeElapsed;
+			}
+			// Last loop
+			if (timeElapsed > ani.endTime && ani.active == true) {
+				scenario.anis[i][j].active = false;
+
+				Point2D newP = ani.end;
+				Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
+					/ ani.duration) + ani.start;
+				fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+				fl_line_style(FL_SOLID, 4);
+				scenToCanvasCoord(newP.x, newP.y);
+				scenToCanvasCoord(prevP.x, prevP.y);
+				newP.y = canvasHeight - newP.y;
+				prevP.y = canvasHeight - prevP.y;
+				fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+			}
+		}
+	}
+
+	//if (stopAni) scenario.aniStart = false;
+}
+
+
+void Canvas::drawGridLines() {
+
 }
 
 
@@ -299,11 +361,7 @@ void Canvas::draw() {
 		GUI::bigRedrawSignal = 0;
 	}
 
-	// User damage ONLY? just draw coords and done
-	if (damage() == FL_DAMAGE_USER1) {
-		drawCoords();
-		return;
-	}
+
 	// Let group draw itself
 	Fl_Group::draw();
 	{
@@ -314,11 +372,13 @@ void Canvas::draw() {
 
 
 	//drawAxes();
-	drawCoords();
+	//drawGridLines();
+	//drawDiscretePoints();
+	//drawCoords();
 	drawAgents();
 	drawPackages();
 	drawTargets();
-	
+	drawAnimation();
 
 }
 
@@ -335,6 +395,15 @@ Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Group(X, Y, W
 	axisLength = ((W < H ? W : H)) * 0.9;
 	origin = ((W < H ? W : H)) * 0.05;
 	squareLength = ((W < H ? W : H)) * 0.8;
+
+	Fl::add_timeout(0.001, timerCallback, (void*)this);
+}
+
+
+void Canvas::timerCallback(void *userData) {
+	Canvas *o = (Canvas*)userData;
+	o->redraw();
+	Fl::repeat_timeout(0.001, timerCallback, userData);
 }
 
 

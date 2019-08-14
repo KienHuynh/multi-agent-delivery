@@ -24,10 +24,35 @@ float Point2D::abs(Point2D a) {
 }
 
 
+Point2D Point2D::operator+(Point2D const &p) {
+	Point2D tmp;
+	tmp.x = x + p.x;
+	tmp.y = y + p.y;
+	return tmp;
+}
+
+
 Point2D Point2D::operator-(Point2D const &p) {
 	Point2D tmp;
 	tmp.x = x - p.x;
 	tmp.y = y - p.y;
+	return tmp;
+}
+
+
+Point2D Point2D::operator/(float const f) {
+	Point2D tmp;
+	tmp.x = x / f;
+	tmp.y = y / f;
+	return tmp;
+}
+
+
+Point2D Point2D::operator*(float const f) {
+	Point2D tmp;
+	tmp.x = x * f;
+	tmp.y = y * f;
+	return tmp;
 }
 
 
@@ -37,14 +62,9 @@ PointState::PointState(Point2D _p) {
 }
 
 
-Package::Package(Point2D _loc0) {
-	loc0 = _loc0;
-	loc = loc0;
-}
-
-
-Target::Target(Point2D _loc) {
-	loc = _loc;
+DesignatedPoint::DesignatedPoint(Point2D _p) {
+	loc = _p;
+	currentLoc = _p;
 }
 
 
@@ -86,60 +106,53 @@ bool Agent::operator<(Agent const &obj) {
 }
 
 
+// Load points such as packages and targets
+// If a point already exists in the grid above, re-use it
+// Otherwise, add a new point to the grid
+void loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, std::vector<int> &idx, 
+	std::vector<PointState> &points) {
+	int nDPoint = 0;
+	myfile >> nDPoint;
+
+	for (int i = 0; i < nDPoint; i++) {
+		int x, y;
+		myfile >> x >> y;
+
+		dPoints.push_back(DesignatedPoint(Point2D(x, y)));
+		bool in = false;
+		for (int p = 0; p < points.size(); p++) {
+			Point2D tmp = points[p].p;
+			if (tmp.x == dPoints[dPoints.size() - 1].loc.x &&
+				tmp.y == dPoints[dPoints.size() - 1].loc.y) {
+				idx.push_back(p);
+				in = true;
+			}
+		}
+		if (in == false) {
+			points.push_back(PointState(dPoints[dPoints.size() - 1].loc));
+			idx.push_back(points.size() - 1);
+		}
+	}
+}
+
+
 void Scenario::loadFile(const char* fname) {
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
 
-	int nPackage = 0, nTarget = 0, nAgent = 0;
+	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
 	int stepX, stepY;
 	myfile >> minX >> maxX >> stepX >> minY >> maxY >> stepY;
 	// TODO: Make this more efficient
+	// Add points to the data pool
 	for (int i = minX; i < maxX; i += stepX) {
 		for (int j = minY; j < maxY; j += stepY) {
 			points.push_back(PointState(Point2D(i, j)));
 		}
 	}
 
-	myfile >> nPackage;
-	for (int i = 0; i < nPackage; i++) {
-		int x, y;
-		myfile >> x >> y;
-		packages.push_back(Package(Point2D(x, y)));
-		bool in = false;
-		for (int p = 0; p < points.size(); p++) {
-			Point2D tmp = points[p].p;
-			if (tmp.x == packages[packages.size() - 1].loc0.x &&
-				tmp.y == packages[packages.size() - 1].loc0.y) {
-				packageIdx.push_back(p);
-				in = true;
-			}
-		}
-		if (in == false) {
-			points.push_back(PointState(packages[packages.size()-1].loc0));
-			packageIdx.push_back(points.size() - 1);
-		}
-	}
-
-	myfile >> nTarget;
-	for (int i = 0; i < nTarget; i++) {
-		int x, y;
-		myfile >> x >> y;
-		targets.push_back(Target(Point2D(x, y)));
-
-		bool in = false;
-		for (int p = 0; p < points.size(); p++) {
-			Point2D tmp = points[p].p;
-			if (tmp.x == targets[targets.size() - 1].loc.x &&
-				tmp.y == targets[targets.size() - 1].loc.y) {
-				targetIdx.push_back(p);
-				in = true;
-			}
-		}
-		if (in == false) {
-			points.push_back(PointState(targets[targets.size() - 1].loc));
-			targetIdx.push_back(points.size() - 1);
-		}
-	}
+	loadDesignatedPoint(myfile, packages, packageIdx, points);
+	loadDesignatedPoint(myfile, targets, targetIdx, points);
 
 	myfile >> nAgent;
 	maxSpeed = -1;
@@ -158,8 +171,7 @@ void Scenario::loadFile(const char* fname) {
 		if (v < minSpeed) {
 			minSpeed = v;
 		}
-		//Point2D p(x, y);
-		//Agent a(p, v);
+
 		Agent a(x, y, v);
 		agents.push_back(a);
 	}
@@ -176,10 +188,10 @@ float max(float x, float y) {
 
 void Scenario::ecld2DDynamicSolve11() {
 	// Find the drone that can get to the package in the shortest time
-	float bestTime = agents[0].timing(packages[0].loc0);
+	float bestTime = agents[0].timing(packages[0].currentLoc);
 	int bestAgent = 0;
 	for (int k = 1; k < agents.size(); k++) {
-		float timeTmp = agents[k].timing(packages[0].loc0);
+		float timeTmp = agents[k].timing(packages[0].currentLoc);
 		if (timeTmp < bestTime) {
 			bestTime = timeTmp;
 			bestAgent = k;
@@ -188,9 +200,9 @@ void Scenario::ecld2DDynamicSolve11() {
 
 	// Assign best time, agent queue and point queue to all points in the scenario
 	for (int i = 0; i < points.size(); i++) {
-		points[i].bestTime = agents[bestAgent].timing(points[i].p);
+		points[i].bestTime = bestTime + agents[bestAgent].timing(packages[0].loc, points[i].p);
 		points[i].agentQueue.push_back(agents[bestAgent]);
-		points[i].pointQueue.push_back(packages[0].loc0);
+		points[i].pointQueue.push_back(packages[0].loc);
 	}
 
 	// No point in handing the package to a slower drone
@@ -201,13 +213,16 @@ void Scenario::ecld2DDynamicSolve11() {
 			int best_j = -1;
 			if (i % 10 == 0) std::cout << i << std::endl;
 			for (int j = 0; j < pointsCopy.size(); j++) {
+
 				float timeTo_j = agents[k].timing(pointsCopy[j].p);
 				// Factor waiting time
 				timeTo_j = max(timeTo_j, pointsCopy[j].bestTime);
-
+				 
 				float time_jTo_i = agents[k].timing(pointsCopy[j].p, pointsCopy[i].p);
-				if (timeTo_j + time_jTo_i < pointsCopy[i].bestTime) {
-					
+				if (timeTo_j + time_jTo_i < points[i].bestTime) {
+					if (i == 401) {
+						std::cout << j << std::endl;
+					}
 					points[i].bestTime = timeTo_j + time_jTo_i;
 					best_j = j;
 				}
@@ -220,6 +235,94 @@ void Scenario::ecld2DDynamicSolve11() {
 			}
 		}
 	}
+}
+
+
+LineAnimation::LineAnimation() {
+	prevTimer = -1;
+}
+
+
+void Scenario::createAnimation(Solver solver) {
+	if (solver == Solver::ECLD_2D_DYNAMIC) {
+		std::vector<Agent> agentQ = points[targetIdx[0]].agentQueue;
+		std::vector<Point2D> pointQ = points[targetIdx[0]].pointQueue;
+		for (int i = 0; i < agentQ.size(); i++) {
+			int color = 255 * (agentQ[i].v - minSpeed) / (maxSpeed - minSpeed);
+			LineAnimation tmpAni0, tmpAni1;
+			std::vector<LineAnimation> tmpAni;
+			if (i < agentQ.size() - 1) {
+				tmpAni0.color[0] = 25;
+				tmpAni0.color[1] = 25;
+				tmpAni0.color[2] = color;
+				tmpAni1.color[0] = 25;
+				tmpAni1.color[1] = 25;
+				tmpAni1.color[2] = color;
+
+				tmpAni0.start = agentQ[i].loc0;
+				tmpAni0.end = pointQ[i];
+				tmpAni0.startTime = 0;
+				tmpAni0.endTime = tmpAni0.startTime + 
+					agentQ[i].timing(tmpAni0.start, tmpAni0.end);
+				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+				
+
+				tmpAni1.start = tmpAni0.end;
+				tmpAni1.end = pointQ[i + 1];
+				tmpAni1.startTime = tmpAni0.endTime;
+				tmpAni1.endTime = tmpAni1.startTime + 
+					agentQ[i].timing(tmpAni1.start, tmpAni1.end);
+				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+			}
+			// Special treatment for last agent
+			// TODO: trim this down later, redundant code
+			else {
+				tmpAni0.color[0] = 25;
+				tmpAni0.color[1] = 25;
+				tmpAni0.color[2] = color;
+				tmpAni1.color[0] = 25;
+				tmpAni1.color[1] = 25;
+				tmpAni1.color[2] = color;
+
+				tmpAni0.start = agentQ[i].loc0;
+				tmpAni0.end = pointQ[i];
+				tmpAni0.startTime = 0;
+				tmpAni0.endTime = tmpAni0.startTime +
+					agentQ[i].timing(tmpAni0.start, tmpAni0.end);
+				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+
+				tmpAni1.start = tmpAni0.end;
+				tmpAni1.end = points[targetIdx[0]].p;
+				tmpAni1.startTime = tmpAni0.endTime;
+				tmpAni1.endTime = tmpAni1.startTime +
+					agentQ[i].timing(tmpAni1.start, tmpAni1.end);
+				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+			}
+			tmpAni.push_back(tmpAni0);
+			tmpAni.push_back(tmpAni1);
+			anis.push_back(tmpAni);
+		}
+		// Do another run to add waiting time
+		for (int i = 1; i < anis.size(); i++) {
+			float prevAgentAniEndTime = anis[i - 1][anis[i - 1].size() - 1].endTime;
+			if (anis[i][0].endTime < prevAgentAniEndTime) {
+				float diff = prevAgentAniEndTime - anis[i][0].endTime;
+				
+				// Only add wait time after handoff
+				for (int j = 1; j < anis[i].size(); j++) {
+					anis[i][j].startTime += diff;
+					anis[i][j].endTime += diff;
+				}
+
+			}
+		}
+	}
+}
+
+
+Scenario::Scenario() {
+	timer = 0;
+	aniStart = 0;
 }
 
 

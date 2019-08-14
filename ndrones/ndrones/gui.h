@@ -46,17 +46,23 @@ protected:
 	// Draw the axes and the unit square
 	void drawAxes();
 
+	// Draw grid lines
+	void drawGridLines();
+
 	// Draw the agents
 	void drawAgents();
 
-	// Draw the agents in time
-	void drawAgentsInTime();
+	// Draw animations in the scenario
+	void drawAnimation();
 
 	// Draw the packages
 	void drawPackages();
 
 	// Draw the targets;
 	void drawTargets();
+
+	// Draw the discrete points
+	void drawDiscretePoints();
 
 	// The main draw function of canvas
 	void draw();
@@ -66,6 +72,9 @@ protected:
 
 	// Convert canvas coords to scenario coord
 	void canvasToScenCoord(float &x, float &y);
+
+	// The timer function to activate redraw
+	static void timerCallback(void *userData);
 
 public:
 	// Box to display the background image

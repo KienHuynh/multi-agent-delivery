@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cmath>
 #include <iostream>
+#include <chrono>
 
 enum Solver {ECLD_2D_DYNAMIC};
 
@@ -22,7 +23,10 @@ public:
 	static float l2Distance(Point2D, Point2D);
 	static float abs(Point2D);
 
+	Point2D operator + (Point2D const &obj);
 	Point2D operator - (Point2D const &obj);
+	Point2D operator / (float const);
+	Point2D operator * (float const);
 };
 
 
@@ -72,41 +76,58 @@ public:
 };
 
 
-class Package {
-public:
-	Point2D loc0;
-	Point2D loc;
 
-	Package(Point2D);
+class DesignatedPoint {
+public:
+	Point2D loc;
+	Point2D currentLoc;
+	DesignatedPoint(Point2D);
 };
 
 
-class Target {
+class LineAnimation {
 public:
-	Point2D loc;
-	
-	Target(Point2D);
+	Point2D start;
+	Point2D end;
+	int color[3];
+	float startTime;
+	float endTime;
+	float duration;
+	float prevTimer;
+	bool active;
+
+	LineAnimation();
 };
 
 
 class Scenario {
 public:
 	std::vector<Agent> agents;
+	std::vector<std::vector<LineAnimation>> anis;
+
 	float maxSpeed, minSpeed;
 	int minX, maxX, minY, maxY;
 
+	// Animation related members
+	float timer;
+	bool aniStart;
+
 	std::vector<PointState> points;
-	std::vector<Package> packages;
+	std::vector<DesignatedPoint> packages;
 	// Store the id of the point of the package
 	std::vector<int> packageIdx;
-	std::vector<Target> targets;
+	std::vector<DesignatedPoint> targets;
 	std::vector<int> targetIdx;
+
+	Scenario();
 
 	// Load scenario from file
 	void loadFile(const char*);
 
 	// Euclidean 2D dynamic solver for 1-drone-1-package
 	void ecld2DDynamicSolve11();
+	// Create an animation based on the solution
+	void createAnimation(Solver);
 	void solve(Solver);
 };
 
