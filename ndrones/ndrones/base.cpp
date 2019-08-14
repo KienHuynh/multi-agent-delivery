@@ -134,6 +134,43 @@ void Scenario::loadDesignatedPoint(std::ifstream &myfile, std::vector<Designated
 }
 
 
+void Scenario::loadDesignatedPolygon(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
+	std::vector<PointState> &points) {
+	std::vector<Point2D> vList;
+	for (int i = 0; i < nDPoint; i++) {
+		int x, y;
+		myfile >> x >> y;
+		vList.push_back(Point2D(x, y));
+	}
+
+	for (int i=0; i < vList.size(); i++) {
+		Point2D start = vList[i % nDPoint];
+		Point2D end = vList[(i+1) % nDPoint];
+		for (int s = 0; s < cfg::polySamplingRate; s++) {
+			float rate = ((float)s) / ((float)cfg::polySamplingRate);
+			Point2D t1 = end - start;
+			Point2D t2 = t1 * rate;
+			Point2D middle = (end - start)*rate + start;
+
+			dPoints.push_back(DesignatedPoint(middle));
+			bool in = false;
+			for (int p = 0; p < points.size(); p++) {
+				Point2D tmp = points[p].p;
+				if (tmp.x == dPoints[dPoints.size() - 1].loc.x &&
+					tmp.y == dPoints[dPoints.size() - 1].loc.y) {
+					idx.push_back(p);
+					in = true;
+				}
+			}
+			if (in == false) {
+				points.push_back(PointState(dPoints[dPoints.size() - 1].loc));
+				idx.push_back(points.size() - 1);
+			}
+		}
+	}
+}
+
+
 void Scenario::loadFile(const char* fname) {
 
 	std::ifstream myfile;
@@ -158,21 +195,21 @@ void Scenario::loadFile(const char* fname) {
 	}
 
 	myfile >> packageInputMode;
+	myfile >> nPackage;
 	if (packageInputMode == 0) {
-		myfile >> nPackage;
 		loadDesignatedPoint(myfile, packages, nPackage, packageIdx, points);
 	}
 	else if (packageInputMode == 1) {
-		// TODO
+		loadDesignatedPolygon(myfile, packages, nPackage, packageIdx, points);
 	}
 
 	myfile >> targetInputMode;
+	myfile >> nTarget;
 	if (targetInputMode == 0) {
-		myfile >> nTarget;
 		loadDesignatedPoint(myfile, targets, nTarget, targetIdx, points);
 	}
 	else if (targetInputMode == 1) {
-
+		loadDesignatedPolygon(myfile, targets, nTarget, targetIdx, points);
 	}
 
 

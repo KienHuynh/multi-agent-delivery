@@ -6,6 +6,8 @@
 #include <iostream>
 #include <chrono>
 
+#include "config.h"
+
 enum Solver {ECLD_2D_DYNAMIC};
 
 class Agent;
@@ -148,5 +150,6 @@ private:
 	// This is used to load target points or package points
 	void loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
 		std::vector<PointState> &points);
+	void loadDesignatedPolygon(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
+		std::vector<PointState> &points);
 };
-
