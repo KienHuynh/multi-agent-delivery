@@ -375,8 +375,17 @@ LineAnimation::LineAnimation() {
 
 void Scenario::createAnimation() {
 	if (problemType == 0) {
-		std::vector<Agent> agentQ = points[targetIdx[0]].agentQueue;
-		std::vector<Point2D> pointQ = points[targetIdx[0]].pointQueue;
+		int bestTargetID = targetIdx[0];
+		float bestTime = points[targetIdx[0]].bestTime;
+		for (int i = 1; i < targets.size(); i++) {
+			if (bestTime > points[targetIdx[i]].bestTime) {
+				bestTargetID = targetIdx[i];
+				bestTime = points[targetIdx[i]].bestTime;
+			}
+		}
+
+		std::vector<Agent> agentQ = points[bestTargetID].agentQueue;
+		std::vector<Point2D> pointQ = points[bestTargetID].pointQueue;
 		for (int i = 0; i < agentQ.size(); i++) {
 			int color = 255 * (agentQ[i].v - minSpeed) / (maxSpeed - minSpeed);
 			LineAnimation tmpAni0, tmpAni1;
@@ -414,7 +423,7 @@ void Scenario::createAnimation() {
 				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
 
 				tmpAni1.start = tmpAni0.end;
-				tmpAni1.end = points[targetIdx[0]].p;
+				tmpAni1.end = points[bestTargetID].p;
 				tmpAni1.startTime = tmpAni0.endTime;
 				tmpAni1.endTime = tmpAni1.startTime +
 					agentQ[i].timing(tmpAni1.start, tmpAni1.end);
