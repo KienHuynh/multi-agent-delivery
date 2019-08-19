@@ -13,4 +13,5 @@
 45 36 7
 45 57 7.5
 66 67 9
-Example of 2 packages of the same role and 2 targets of the same role
+Example of 2 packages of the same role and 2 targets of the same role.
+The targets and packages are specified in form of discrete points.
