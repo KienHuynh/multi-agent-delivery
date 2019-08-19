@@ -2,14 +2,29 @@ problem_type solver_type // Problem info
 start_x end_x sampling_step // Sampling
 start_y end_y sampling_step
 input_point_type num_point // Package (s) info
-x1 y1
-x2 y2
+x1 y1 id1
+x2 y2 id2
 ... // num_point
 input_point_type num_point // Target (s) info
-x1 y1
-x2 y2
+x1 y1 id1
+x2 y2 id2
 ... // num_point
 num_agent
 x1 y1 v1
 x2 y2 v2
 ... // num_agent
+
+=========================================================
+problem_type
+0 - 1 package 1 target, can be regional / multiple points
+1 - N packages M tagets
+
+solver_type
+0 - Discrete & iterate
+1 - Heuristic
+
+input_point_type
+0 - Single points
+1 - Line segments (to be discretized later in loading). Note: if you want to input a simple polygon, add the first point in the end
+
+id - Only used if problem_type=1. This is so that we can match which package to which target.
