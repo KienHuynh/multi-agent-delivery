@@ -65,6 +65,14 @@ PointState::PointState(Point2D _p) {
 DesignatedPoint::DesignatedPoint(Point2D _p) {
 	loc = _p;
 	currentLoc = _p;
+	ID = -1;
+}
+
+
+DesignatedPoint::DesignatedPoint(Point2D _p, int _id) {
+	loc = _p;
+	currentLoc = _p;
+	ID = _id;
 }
 
 
@@ -106,36 +114,44 @@ bool Agent::operator<(Agent const &obj) {
 }
 
 
-// Load points such as packages and targets
-// If a point already exists in the grid above, re-use it
-// Otherwise, add a new point to the grid
-void Scenario::loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, 
-	std::vector<int> &idx, std::vector<PointState> &points) {
+void Scenario::loadDesignatedPoint(std::ifstream &myfile, int problemType, std::vector<DesignatedPoint> &dPoints, 
+	int nDPoint, std::vector<PointState> &points) {
 
 	for (int i = 0; i < nDPoint; i++) {
-		int x, y;
-		myfile >> x >> y;
-
-		dPoints.push_back(DesignatedPoint(Point2D(x, y)));
+		int x, y, id;
+		if (problemType == 0) {
+			myfile >> x >> y;
+			dPoints.push_back(DesignatedPoint(Point2D(x, y)));
+		}
+		else if (problemType == 1) {
+			myfile >> x >> y >> id;
+			dPoints.push_back(DesignatedPoint(Point2D(x, y), id));
+		}
+		
 		bool in = false;
 		for (int p = 0; p < points.size(); p++) {
 			Point2D tmp = points[p].p;
+			// If the new designated point already exists in the grid
+			// Do not add a new point into the grid
 			if (tmp.x == dPoints[dPoints.size() - 1].loc.x &&
 				tmp.y == dPoints[dPoints.size() - 1].loc.y) {
-				idx.push_back(p);
+				dPoints[dPoints.size() - 1].gridRef = p;
 				in = true;
+				break;
 			}
 		}
+
+		// Add a new point into the grid
 		if (in == false) {
 			points.push_back(PointState(dPoints[dPoints.size() - 1].loc));
-			idx.push_back(points.size() - 1);
+			dPoints[dPoints.size() - 1].gridRef = points.size() - 1;
 		}
 	}
 }
 
 
-void Scenario::loadDesignatedPolygon(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
-	std::vector<PointState> &points) {
+void Scenario::loadDesignatedPolygon(std::ifstream &myfile, int problemType, std::vector<DesignatedPoint> &dPoints, 
+	int nDPoint, std::vector<PointState> &points) {
 	std::vector<Point2D> vList;
 	for (int i = 0; i < nDPoint; i++) {
 		int x, y;
@@ -146,6 +162,7 @@ void Scenario::loadDesignatedPolygon(std::ifstream &myfile, std::vector<Designat
 	for (int i=0; i < vList.size(); i++) {
 		Point2D start = vList[i % nDPoint];
 		Point2D end = vList[(i+1) % nDPoint];
+		// Interpolation
 		for (int s = 0; s < cfg::polySamplingRate; s++) {
 			float rate = ((float)s) / ((float)cfg::polySamplingRate);
 			Point2D t1 = end - start;
@@ -158,13 +175,13 @@ void Scenario::loadDesignatedPolygon(std::ifstream &myfile, std::vector<Designat
 				Point2D tmp = points[p].p;
 				if (tmp.x == dPoints[dPoints.size() - 1].loc.x &&
 					tmp.y == dPoints[dPoints.size() - 1].loc.y) {
-					idx.push_back(p);
+					dPoints[dPoints.size() - 1].gridRef = p;
 					in = true;
 				}
 			}
 			if (in == false) {
 				points.push_back(PointState(dPoints[dPoints.size() - 1].loc));
-				idx.push_back(points.size() - 1);
+				dPoints[dPoints.size() - 1].gridRef = points.size() - 1;
 			}
 		}
 	}
@@ -197,19 +214,19 @@ void Scenario::loadFile(const char* fname) {
 	myfile >> packageInputMode;
 	myfile >> nPackage;
 	if (packageInputMode == 0) {
-		loadDesignatedPoint(myfile, packages, nPackage, packageIdx, points);
+		loadDesignatedPoint(myfile, problemType, packages, nPackage, points);
 	}
 	else if (packageInputMode == 1) {
-		loadDesignatedPolygon(myfile, packages, nPackage, packageIdx, points);
+		loadDesignatedPolygon(myfile, problemType, packages, nPackage, points);
 	}
 
 	myfile >> targetInputMode;
 	myfile >> nTarget;
 	if (targetInputMode == 0) {
-		loadDesignatedPoint(myfile, targets, nTarget, targetIdx, points);
+		loadDesignatedPoint(myfile, problemType, targets, nTarget, points);
 	}
 	else if (targetInputMode == 1) {
-		loadDesignatedPolygon(myfile, targets, nTarget, targetIdx, points);
+		loadDesignatedPolygon(myfile, problemType, targets, nTarget, points);
 	}
 
 
@@ -247,7 +264,7 @@ float max(float x, float y) {
 
 bool Scenario::isPackage(int id) {
 	for (int ip = 0; ip < packages.size(); ip++) {
-		if (id == packageIdx[ip]) {
+		if (id == packages[ip].gridRef) {
 			return true;
 		}
 	}
@@ -255,21 +272,21 @@ bool Scenario::isPackage(int id) {
 }
 
 
-void Scenario::ecld2DDynamicSolveNN() {
+void Scenario::ecld2DType0DynamicSolveNM() {
 	// First run with the slowest drone
 	// Compute the best time it takes for this drone to get to a package and fly to any other point on the grid
 	for (int i = 0; i < points.size(); i++) {
 		if (isPackage(i)) continue;
 
 		float bestTime = -1;
-		int bestPackageID = packageIdx[0];
+		int bestPackageID = packages[0].gridRef;
 		for (int ip = 0; ip < packages.size(); ip++) {
-			PointState ps_ip = points[packageIdx[ip]];
+			PointState ps_ip = points[packages[ip].gridRef];
 			float time = agents[0].timing(ps_ip.p) + agents[0].timing(ps_ip.p, points[i].p);
 
 			if (bestTime == -1 or bestTime > time) {
 				bestTime = time;
-				bestPackageID = packageIdx[ip];
+				bestPackageID = packages[ip].gridRef;
 			}
 		}
 
@@ -309,7 +326,7 @@ void Scenario::ecld2DDynamicSolveNN() {
 }
 
 
-void Scenario::ecld2DDynamicSolve11() {
+void Scenario::ecld2DType0DynamicSolve11() {
 	// Find the drone that can get to the package in the shortest time
 	float bestTime = agents[0].timing(packages[0].currentLoc);
 	int bestAgent = 0;
@@ -361,6 +378,27 @@ void Scenario::ecld2DDynamicSolve11() {
 }
 
 
+void Scenario::ecld2DType1DynamicSolveNM() {
+	std::vector<int> activeID;
+	for (int p = 0; p < packages.size(); p++) {
+		for (int t = 0; t < targets.size(); t++) {
+			if (packages[p].ID == targets[t].ID) {
+				activeID.push_back(targets[t].ID);
+				break;
+			}
+		}
+	}
+
+	while (true) {
+
+	}
+
+	for (int _id = 0; _id < activeID.size(); _id++) {
+
+	}
+}
+
+
 void LineAnimation::setColor(int c0, int c1, int c2) {
 	color[0] = c0;
 	color[1] = c1;
@@ -375,12 +413,12 @@ LineAnimation::LineAnimation() {
 
 void Scenario::createAnimation() {
 	if (problemType == 0) {
-		int bestTargetID = targetIdx[0];
-		float bestTime = points[targetIdx[0]].bestTime;
+		int bestTargetID = targets[0].gridRef;
+		float bestTime = points[targets[0].gridRef].bestTime;
 		for (int i = 1; i < targets.size(); i++) {
-			if (bestTime > points[targetIdx[i]].bestTime) {
-				bestTargetID = targetIdx[i];
-				bestTime = points[targetIdx[i]].bestTime;
+			if (bestTime > points[targets[i].gridRef].bestTime) {
+				bestTargetID = targets[i].gridRef;
+				bestTime = points[targets[i].gridRef].bestTime;
 			}
 		}
 
@@ -460,10 +498,15 @@ Scenario::Scenario() {
 void Scenario::solve() {
 	if (problemType == 0) {
 		if (solverType == 0) {
-			//ecld2DDynamicSolve11();
-			ecld2DDynamicSolveNN();
+			//ecld2DType0DynamicSolve11();
+			ecld2DType0DynamicSolveNM();
 			int a = 1;
 			a = a + 1;
+		}
+	}
+	if (problemType == 1) {
+		if (solverType == 1) {
+
 		}
 	}
 }

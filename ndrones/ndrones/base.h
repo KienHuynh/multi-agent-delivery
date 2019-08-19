@@ -73,17 +73,22 @@ public:
 	// Compute the time to go from point i to j
 	float timing(Point2D, Point2D);
 
-
 	bool operator < (Agent const &obj);
 };
 
 
-
 class DesignatedPoint {
 public:
+	// Staring location
 	Point2D loc;
 	Point2D currentLoc;
+	// ID of this point, used for package-target matching
+	int ID;
+	// The id reference of this point in the main grid (i.e. the member std::vector<PointState> points in scenario)
+	int gridRef;
+
 	DesignatedPoint(Point2D);
+	DesignatedPoint(Point2D, int);
 };
 
 
@@ -122,12 +127,12 @@ public:
 	float timer;
 	bool aniStart;
 
+	// The grid
 	std::vector<PointState> points;
+	// Store the packages
 	std::vector<DesignatedPoint> packages;
 	// Store the id of the point of the package
-	std::vector<int> packageIdx;
 	std::vector<DesignatedPoint> targets;
-	std::vector<int> targetIdx;
 
 	Scenario();
 
@@ -138,9 +143,15 @@ public:
 	// TODO: use better data structure?
 	bool isPackage(int);
 	
-	// Euclidean 2D dynamic solver for 1-drone-1-package
-	void ecld2DDynamicSolve11();
-	void ecld2DDynamicSolveNN();
+	// Euclidean 2D (problem) type 0, dynamic solver for 1 drone and 1 package
+	// Approximation of opt.
+	void ecld2DType0DynamicSolve11();
+	// Euclidean 2D (problem) type 0, dynamic solver for n drones and m packages
+	// Approximation of opt.
+	void ecld2DType0DynamicSolveNM();
+	// Euclidean 2D (problem) type 1, dynamic solver for n drones and m packages
+	// Heuristic
+	void ecld2DType1DynamicSolveNM();
 
 	// Create an animation based on the solution
 	void createAnimation();
@@ -148,8 +159,24 @@ public:
 
 private:
 	// This is used to load target points or package points
-	void loadDesignatedPoint(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
-		std::vector<PointState> &points);
-	void loadDesignatedPolygon(std::ifstream &myfile, std::vector<DesignatedPoint> &dPoints, int nDPoint, std::vector<int> &idx,
-		std::vector<PointState> &points);
+	// Load points such as packages and targets
+	// If a point already exists in the grid above, re-use it
+	// Otherwise, add a new point to the grid
+	// @param myfile ifstream object with the input file already loaded
+	// @param problemType problem type, see inputDescription.txt
+	// @param dPoints the array of DesignatedPoint to store the package/target locations
+	// @param nDPoint number of designated points
+	// @param points the point grid
+	void loadDesignatedPoint(std::ifstream &myfile, int problemType, std::vector<DesignatedPoint> &dPoints, 
+		int nDPoint, std::vector<PointState> &points);
+	// Load package regions and target regions as polygons
+	// These polygons will be discretized by their edges
+	// TODO: Allow this function to add polygons with different IDs
+	// @param myfile ifstream object with the input file already loaded
+	// @param problemType problem type, see inputDescription.txt
+	// @param dPoints the array of DesignatedPoint to store the package/target locations
+	// @param nDPoint number of designated points
+	// @param points the point grid
+	void loadDesignatedPolygon(std::ifstream &myfile, int problemType, std::vector<DesignatedPoint> &dPoints, 
+		int nDPoint, std::vector<PointState> &points);
 };
