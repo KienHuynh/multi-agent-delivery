@@ -1,0 +1,15 @@
+problem_type solver_type // Problem info
+start_x end_x sampling_step // Sampling
+start_y end_y sampling_step
+input_point_type num_point // Package (s) info
+x1 y1
+x2 y2
+... // num_point
+input_point_type num_point // Target (s) info
+x1 y1
+x2 y2
+... // num_point
+num_agent
+x1 y1 v1
+x2 y2 v2
+... // num_agent
