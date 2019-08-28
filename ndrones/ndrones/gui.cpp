@@ -286,6 +286,7 @@ void Canvas::drawDiscretePoints() {
 }
 
 
+// TODO: Should be in a separate animation class
 void Canvas::drawAnimation() {
 	if (!scenario.aniStart) return;
 	auto now = std::chrono::system_clock::now().time_since_epoch();

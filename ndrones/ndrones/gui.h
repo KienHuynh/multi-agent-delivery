@@ -23,6 +23,7 @@
 // Local includes
 #include "base.h"
 #include "config.h"
+#include "scenario.h"
 
 // GLOBALS
 static Fl_Input        *G_inptitle = NULL;
