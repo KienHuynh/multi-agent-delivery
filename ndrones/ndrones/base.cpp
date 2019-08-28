@@ -57,6 +57,12 @@ Point2D Point2D::operator*(float const f) {
 }
 
 
+bool Point2D::operator == (Point2D const &obj) {
+	if (x == obj.x && y == obj.y) return true;
+	else return false;
+}
+
+
 PointState::PointState(Point2D _p) {
 	p = _p;
 	bestTime = -1;
@@ -149,4 +155,17 @@ float Agent::timing(Point2D i, Point2D j) {
 
 bool Agent::operator<(Agent const &obj) {
 	return v < obj.v;
+}
+
+
+bool Agent::operator==(Agent const &obj) {
+	if (loc0 == obj.loc0 &&
+		loc == obj.loc &&
+		v == obj.v &&
+		delay == obj.delay &&
+		maxFuel == obj.maxFuel &&
+		fuel == obj.fuel &&
+		isAvail == obj.isAvail) return true;
+
+	return false;
 }

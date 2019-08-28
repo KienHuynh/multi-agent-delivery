@@ -1,3 +1,8 @@
+/*
+ * base.h
+ * This file contains basic classes and entities needed for the main solvers
+*/
+
 #pragma once
 #include <vector>
 #include <algorithm>
@@ -8,10 +13,15 @@
 
 #include "config.h"
 
+
 enum Solver {ECLD_2D_DYNAMIC};
 
+
+// The main for Agent
 class Agent;
 
+
+// Basic 2D point class
 class Point2D {
 public:
 	float x;
@@ -21,6 +31,7 @@ public:
 	Point2D(float, float);
 
 	void copy(Point2D);
+
 	// Compute L2 distance
 	static float l2Distance(Point2D, Point2D);
 	static float abs(Point2D);
@@ -29,9 +40,11 @@ public:
 	Point2D operator - (Point2D const &obj);
 	Point2D operator / (float const);
 	Point2D operator * (float const);
+	bool operator == (Point2D const &obj);
 };
 
 
+// This class is used to store point state such as best time / agent queue, which is needed to store the solution
 class PointState {
 public:
 	Point2D p;
@@ -82,9 +95,11 @@ public:
 	float timing(Point2D, Point2D);
 
 	bool operator < (Agent const &obj);
+	bool operator == (Agent const &obj);
 };
 
 
+// Specific points that the agents need to travel from/to
 class DesignatedPoint {
 public:
 	// Staring location
@@ -95,11 +110,15 @@ public:
 	// The id reference of this point in the main grid (i.e. the member std::vector<PointState> points in scenario)
 	int gridRef;
 
+	DesignatedPoint();
 	DesignatedPoint(Point2D);
 	DesignatedPoint(Point2D, int);
 };
 
 
+// Basic line animation
+// This works by specifying a start time and end time of an animation, along with a start point and end point
+// Each time the clock tick, the drawing function will interpolate a line segment between the start and end
 class LineAnimation {
 public:
 	Point2D start;
@@ -108,7 +127,10 @@ public:
 	float startTime;
 	float endTime;
 	float duration;
+
+	// Store the previous timer, used to calculate the current line segment (span from prevPoint to currentPoint)
 	float prevTimer;
+	// Specify if the current animation is active or not
 	bool active;
 
 	LineAnimation();
