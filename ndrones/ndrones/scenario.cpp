@@ -158,9 +158,9 @@ float max(float x, float y) {
 }
 
 
-bool Scenario::isPackage(int id) {
-	for (int ip = 0; ip < packages.size(); ip++) {
-		if (id == packages[ip].gridRef) {
+bool Scenario::isPackage(int id, std::vector<DesignatedPoint> _packages) {
+	for (int ip = 0; ip < _packages.size(); ip++) {
+		if (id == _packages[ip].gridRef) {
 			return true;
 		}
 	}
@@ -175,15 +175,15 @@ void Scenario::ecld2DType0DynamicNMCommon(
 	// First run with the slowest drone
 	// Compute the best time it takes for this drone to get to a package and fly to any other point on the grid
 	for (int i = 0; i < _points.size(); i++) {
-		if (isPackage(i)) continue;
+		if (isPackage(i, _packages)) continue;
 
 		float bestTime = -1;
-		int bestPackageID = _packages[0].gridRef;
+		int bestPackageID = -1;
 		for (int ip = 0; ip < _packages.size(); ip++) {
 			PointState ps_ip = _points[_packages[ip].gridRef];
 			float time = _agents[0].timing(ps_ip.p) + _agents[0].timing(ps_ip.p, _points[i].p);
 
-			if (bestTime == -1 or bestTime > time) {
+			if (bestTime == -1 || bestTime > time) {
 				bestTime = time;
 				bestPackageID = _packages[ip].gridRef;
 			}
@@ -197,10 +197,10 @@ void Scenario::ecld2DType0DynamicNMCommon(
 	for (int k = 1; k < _agents.size(); k++) {
 		std::vector<PointState> pointsCopy = _points;
 		for (int i = 0; i < _points.size(); i++) {
-			if (isPackage(i)) continue;
+			if (isPackage(i, _packages)) continue;
 
 			int best_j = -1;
-			if (i % 10 == 0) std::cout << i << std::endl;
+			if (i % 100 == 0) std::cout << i << std::endl;
 			// Find the best handoff point j so that it can travel to i in the shortest time
 			for (int j = 0; j < pointsCopy.size(); j++) {
 
@@ -282,74 +282,170 @@ void Scenario::ecld2DType0Dynamic11() {
 }
 
 
-void Scenario::ecld2DType0DynamicNM(int matchID) {
-	// TODO: Implement target / package cluster with unique ID for easier & faster management
-	std::vector<DesignatedPoint> packagesOfID;
-	std::vector<DesignatedPoint> targetsOfID;
-	std::copy_if(packages.begin(), packages.end(), std::back_inserter(packagesOfID),
-		[&](DesignatedPoint p) {return p.ID == matchID; });
-	std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID),
-		[&](DesignatedPoint p) {return p.ID == matchID; });
 
-
-
-	// TODO: Insert re-used agent into the list as a new one according to its speed
-
+float Scenario::findBestTimeFromTargets(std::vector<PointState> _points, std::vector<DesignatedPoint> _targets) {
+	float bestTime = _points[_targets[0].gridRef].bestTime;
+	for (int t = 1; t < _targets.size(); t++) {
+		if (bestTime > _points[_targets[t].gridRef].bestTime) {
+			bestTime = _points[_targets[t].gridRef].bestTime;
+		}
+	}
+	return bestTime;
 }
 
 
+DesignatedPoint Scenario::findBestTarget(std::vector<PointState> _points, std::vector<DesignatedPoint> _targets) {
+	float bestTime = _points[_targets[0].gridRef].bestTime;
+	int best_t = 0;
+	for (int t = 1; t < _targets.size(); t++) {
+		if (bestTime > _points[_targets[t].gridRef].bestTime) {
+			bestTime = _points[_targets[t].gridRef].bestTime;
+			best_t = t;
+		}
+	}
+	return targets[best_t];
+}
+
+
+// TODO: optimize this
+float Scenario::maxValWithoutK(float *arr, int size, int k) {
+	if (size == 1) return -1;
+	float m = 0;
+	float *copy = new float[size];
+	
+	for (int i = 0; i < size; i++) copy[i] = arr[i];
+	std::sort(copy, copy + size);
+	
+	if (arr[k] == copy[size - 1]) m = copy[size - 2];
+	else m = copy[size - 1];
+	
+	delete copy;
+
+	return m;
+}
+
+
+// TODO: Implement target / package cluster with unique ID for easier management
 void Scenario::ecld2DType1DynamicNM() {
+
+	// An ID is active if there exists a package-target matching for it
 	// Assume there are A active ids
 	std::vector<int> activeID;
 	for (int p = 0; p < packages.size(); p++) {
 		for (int t = 0; t < targets.size(); t++) {
 			if (packages[p].ID == targets[t].ID) {
+				if (activeID.size() > 0 &&
+					std::find(activeID.begin(), activeID.end(), packages[p].ID) != activeID.end()) continue;
 				activeID.push_back(targets[t].ID);
 				break;
 			}
 		}
 	}
 
-	// TODO: Implement target / package cluster with unique ID for easier management
+	// This stores the agent queue for each matching
+	bestAgentQueues = new std::vector<Agent>[activeID.size()];
+	bestPointQueues = new std::vector<Point2D>[activeID.size()];
+	bestTargets = new DesignatedPoint[activeID.size()];
 
-	//for (int i=0; i<)
+	std::vector<PointState> pointsCopy;
+	std::vector<Agent> agentsCopy, agentsCopyWithout_k;
 
-	while (true) {
-		// Find the A agents to minimize the longest time it takes to deliver all A packages
-		// That is: minimize max(time of deli 1, time of deli 2,... time of deli A)
-		// If K < A then it should be fine too
+	// Split agents into groups, each belong to a matching
+	// i.e. the conflict solving stage
+	for (int k = 0; k < agents.size(); k++) {
 
-		// Store the time it takes for each drone to get to a package and fly toward the corresponding target
-		float **timeTable = new float*[agents.size()];
-		for (int i = 0; i < agents.size(); i++) {
-			timeTable[i] = new float[activeID.size()];
-		}
+		// Store the best delivery time for each matching, assume that this matching uses all available drones
+		float* bestTimes = new float[activeID.size()];
+		// Store the best delivery time for each matching without the "k" agent
+		float* bestTimesWithout_k = new float[activeID.size()];
 
-		for (std::vector<int>::iterator id = activeID.begin(); id != activeID.end(); ++id) {
-			// TODO: Implement target / package cluster with unique ID for easier management
-			std::vector<DesignatedPoint> packagesOfID; // Subset of packages with [id]
-			std::vector<DesignatedPoint> targetsOfID; // Subset of targets with [id]
+		// Compute the "opt" solution for each matching with the same pool of agents
+		// There might be agent(s) appearing in more than one matching
+		for (int i = 0; i < activeID.size(); i++) {
+			int matchID = activeID[i];
+			agentsCopy = agents;
+			agentsCopyWithout_k = agents;
 
+			// Remove all drones (up to k-1) that don't belong to this particular matching
+			for (int j = k-1; j >= 0; j--) {
+				if ((std::find(bestAgentQueues[i].begin(), bestAgentQueues[i].end(), agents[j])) == bestAgentQueues[i].end()) {
+					agentsCopy.erase(agentsCopy.begin() + j);
+					agentsCopyWithout_k.erase(agentsCopyWithout_k.begin() + j);
+				}
+			}
+
+			// Remove the k-th drone for agentsCopyWithout_k
+			agentsCopyWithout_k.erase(
+				std::find(agentsCopyWithout_k.begin(), agentsCopyWithout_k.end(), agents[k])
+			);
+
+			std::vector<DesignatedPoint> packagesOfID;
+			std::vector<DesignatedPoint> targetsOfID;
 			std::copy_if(packages.begin(), packages.end(), std::back_inserter(packagesOfID),
-				[&](DesignatedPoint p) {return p.ID == *id; });
+				[&](DesignatedPoint p) {return p.ID == matchID; });
 			std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID),
-				[&](DesignatedPoint p) {return p.ID == *id; });
+				[&](DesignatedPoint p) {return p.ID == matchID; });
 
-			for (int k = 0; k < agents.size(); k++) {
-				float bestTime = -1;
-				for (int p = 0; p < targetsOfID.size(); p++) {
-					for (int t = 0; t < targetsOfID.size(); t++) {
+			// Solve for all available agents
+			pointsCopy = points;
+			ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID, pointsCopy);
+			bestTimes[i] = findBestTimeFromTargets(pointsCopy, targetsOfID);
 
-					}
+			// Solve for all available agents but the k-th one
+			if (agentsCopyWithout_k.size() > 0) {
+				pointsCopy = points;
+				ecld2DType0DynamicNMCommon(agentsCopyWithout_k, packagesOfID, pointsCopy);
+				bestTimesWithout_k[i] = findBestTimeFromTargets(pointsCopy, targetsOfID);
+			}
+			else {
+				// Only happens in the last loop
+				bestTimesWithout_k[i] = INFINITY;
+			}
+		}
+		
+		// Compare the results. Assign the k-th agent to a matching so that the overall time after assignment would increase with the smallest amount
+		float overallTime = *std::max_element(bestTimes, bestTimes + activeID.size());
+		float newOverallTime = -1;
+		int assignment = -1;
+
+		for (int i = 0; i < activeID.size(); i++) {
+			// Check if k-th drone is used
+			if (bestTimes[i] != bestTimesWithout_k[i]) {
+				float tmp = maxValWithoutK(bestTimesWithout_k, activeID.size(), i);
+				if (assignment == -1 || newOverallTime > tmp) {
+					assignment = i;
+					newOverallTime = tmp;
 				}
 			}
 		}
 
+		if (assignment != -1) bestAgentQueues[assignment].push_back(agents[k]);
+	}
+	
+	// Re-compute the solution with the above assignments
+	for (int i = 0; i < activeID.size(); i++) {
+		int matchID = activeID[i];
+		pointsCopy = points;
+		
+		std::vector<DesignatedPoint> packagesOfID;
+		std::vector<DesignatedPoint> targetsOfID;
+		std::copy_if(packages.begin(), packages.end(), std::back_inserter(packagesOfID),
+			[&](DesignatedPoint p) {return p.ID == matchID; });
+		std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID),
+			[&](DesignatedPoint p) {return p.ID == matchID; });
+
+		ecld2DType0DynamicNMCommon(bestAgentQueues[i], packagesOfID, pointsCopy);
+		bestTargets[i] = findBestTarget(pointsCopy, targetsOfID);
+		float bestTime = findBestTimeFromTargets(pointsCopy, targetsOfID);
+		bestPointQueues[i] = pointsCopy[bestTargets[i].gridRef].pointQueue;
+		// Shouldn't be different
+		bestAgentQueues[i] = pointsCopy[bestTargets[i].gridRef].agentQueue;
 	}
 
-	for (int _id = 0; _id < activeID.size(); _id++) {
-
-	}
+	// TODO: Insert unused/available agent into the list as a new one according to its speed & delay time
+	// Index: k + 1
+	int a = 1;
+	a++;
 }
 
 
@@ -366,13 +462,14 @@ LineAnimation::LineAnimation() {
 
 
 void Scenario::createAnimation() {
+	// TODO: Update this to use the new solution variables
 	if (problemType == 0) {
 		int bestTargetID = targets[0].gridRef;
 		float bestTime = points[targets[0].gridRef].bestTime;
-		for (int i = 1; i < targets.size(); i++) {
-			if (bestTime > points[targets[i].gridRef].bestTime) {
-				bestTargetID = targets[i].gridRef;
-				bestTime = points[targets[i].gridRef].bestTime;
+		for (const DesignatedPoint target : targets) {
+			if (bestTime > points[target.gridRef].bestTime) {
+				bestTargetID = target.gridRef;
+				bestTime = points[target.gridRef].bestTime;
 			}
 		}
 
@@ -439,6 +536,10 @@ void Scenario::createAnimation() {
 
 			}
 		}
+	}
+
+	if (problemType == 1) {
+
 	}
 }
 

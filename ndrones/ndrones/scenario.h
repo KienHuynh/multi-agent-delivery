@@ -1,6 +1,14 @@
+/*
+ * scenario.h
+ * This file contains the main scenario class
+*/
 #pragma once
 #include "base.h"
 
+
+// The core class of the project
+// Store the scenario: data points, designated points (packages, targets), agents
+// Include the solvers to the problems and creation of animations
 class Scenario {
 public:
 	// TODO: use bit flag
@@ -27,14 +35,22 @@ public:
 	// Store the id of the point of the package.
 	std::vector<DesignatedPoint> targets;
 
+	// Variables storing the solution
+	std::vector<Agent>* bestAgentQueues;
+	std::vector<Point2D>* bestPointQueues;
+	DesignatedPoint* bestTargets;
+
 	Scenario();
 
 	// Load scenario from file.
 	void loadFile(const char*);
 
-	// Check if a point is a package.
+	// Check if a point is one of the packages
 	// TODO: use better data structure?
-	bool isPackage(int);
+	// @param[in] int index of a grid point.
+	// @param[in] _packages the list of packages.
+	// @return bool
+	bool isPackage(int, std::vector<DesignatedPoint>);
 
 	// Euclidean 2D (problem) type 0, dynamic solver for 1 drone and 1 package.
 	// Approximation of opt..=
@@ -55,9 +71,15 @@ public:
 		std::vector<PointState> &_points);
 
 	// Euclidean 2D (problem) type 0, dynamic solver for n drones and m packages.
+	// This will only use packages and targets of matchID to compute.
 	// Approximation of opt.
 	// @param[in] matchID the ID of the package-target matching we want to compute.
-	void ecld2DType0DynamicNM(int matchID);
+	// @param[in] _agents the list of agents to be used.
+	// @param[out] _points the grid (sample) points which will also be used to store solutions. If you don't want your data points to be overwritten, use of copy of your data points before calling this.
+	void ecld2DType0DynamicNM(
+		int matchID,
+		std::vector<Agent> _agents,
+		std::vector<PointState> &_points);
 
 	// Euclidean 2D (problem) type 0, dynamic solver for n drones and m packages.
 	// Approximation of opt.
@@ -98,4 +120,25 @@ private:
 		std::vector<DesignatedPoint> &dPoints,
 		int nDPoint,
 		std::vector<PointState> &points);
+
+	// There might be multiple targets of the same matching / role (i.e. our agents can deliver one package to any of them
+	// Find the best delivery among all targets
+	// @param[in] _points the point grid
+	// @param[in] _targets the list of targets
+	// @return bestTime float
+	float findBestTimeFromTargets(std::vector<PointState> _points, std::vector<DesignatedPoint> _targets);
+
+	// There might be multiple targets of the same matching / role (i.e. our agents can deliver one package to any of them
+	// Find the target with the best time
+	// @param[in] _points the point grid
+	// @param[in] _targets the list of targets
+	// @return bestTarget DesignatedPoint
+	DesignatedPoint findBestTarget(std::vector<PointState> _points, std::vector<DesignatedPoint> _targets);
+
+	// Utility function, find the max value of an array without considering the k-th element
+	// @param[in] arr the pointer to the array
+	// @param[in] size it's size
+	// @param[in] k the index to be avoided
+	// @return float
+	float maxValWithoutK(float *arr, int size, int k);
 };
