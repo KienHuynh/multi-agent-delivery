@@ -330,7 +330,6 @@ void Scenario::ecld2DType1DynamicNM() {
 
 	// An ID is active if there exists a package-target matching for it
 	// Assume there are A active ids
-	std::vector<int> activeID;
 	for (int p = 0; p < packages.size(); p++) {
 		for (int t = 0; t < targets.size(); t++) {
 			if (packages[p].ID == targets[t].ID) {
@@ -539,7 +538,73 @@ void Scenario::createAnimation() {
 	}
 
 	if (problemType == 1) {
+		for (int a = 0; a < activeID.size(); a++) {
+			int matchID = activeID[a];
+			float bestTime = points[bestTargets[a].gridRef].bestTime;
 
+			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
+				int color = 255 * (bestAgentQueues[a][i].v - minSpeed) / (maxSpeed - minSpeed);
+				LineAnimation tmpAni0, tmpAni1;
+				std::vector<LineAnimation> tmpAni;
+				if (i < bestAgentQueues[a].size() - 1) {
+					tmpAni0.setColor(25, 25, color);
+					tmpAni1.setColor(25, 25, color);
+
+					tmpAni0.start = bestAgentQueues[a][i].loc0;
+					tmpAni0.end = bestPointQueues[a][i];
+					tmpAni0.startTime = 0;
+					tmpAni0.endTime = tmpAni0.startTime +
+						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
+					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+
+
+					tmpAni1.start = tmpAni0.end;
+					tmpAni1.end = bestPointQueues[a][i + 1];
+					tmpAni1.startTime = tmpAni0.endTime;
+					tmpAni1.endTime = tmpAni1.startTime +
+						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
+					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				}
+				// Special treatment for last agent
+				// TODO: trim this down later, redundant code
+				else {
+					tmpAni0.setColor(25, 25, color);
+					tmpAni1.setColor(25, 25, color);
+
+					tmpAni0.start = bestAgentQueues[a][i].loc0;
+					tmpAni0.end = bestPointQueues[a][i];
+					tmpAni0.startTime = 0;
+					tmpAni0.endTime = tmpAni0.startTime +
+						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
+					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+
+					tmpAni1.start = tmpAni0.end;
+					tmpAni1.end = points[bestTargets[a].gridRef].p;
+					tmpAni1.startTime = tmpAni0.endTime;
+					tmpAni1.endTime = tmpAni1.startTime +
+						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
+					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				}
+				tmpAni.push_back(tmpAni0);
+				tmpAni.push_back(tmpAni1);
+				anis.push_back(tmpAni);
+			}
+			// Do another run to add waiting time
+			for (int i = 1; i < anis.size(); i++) {
+				float prevAgentAniEndTime = anis[i - 1][anis[i - 1].size() - 1].endTime;
+				if (anis[i][0].endTime < prevAgentAniEndTime) {
+					float diff = prevAgentAniEndTime - anis[i][0].endTime;
+
+					// Only add wait time after handoff
+					for (int j = 1; j < anis[i].size(); j++) {
+						anis[i][j].startTime += diff;
+						anis[i][j].endTime += diff;
+					}
+
+				}
+			}
+		}
+		
 	}
 }
 

@@ -32,8 +32,10 @@ public:
 	std::vector<PointState> points;
 	// Store the packages.
 	std::vector<DesignatedPoint> packages;
-	// Store the id of the point of the package.
+	// Store the targets.
 	std::vector<DesignatedPoint> targets;
+	// Store the list of matching id (s)
+	std::vector<int> activeID;
 
 	// Variables storing the solution
 	std::vector<Agent>* bestAgentQueues;
