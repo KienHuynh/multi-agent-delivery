@@ -260,6 +260,15 @@ void Canvas::drawPackages() {
 		scenToCanvasCoord(x, y);
 		fl_color(200, 25, 25);
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+		
+		// Draw package ID
+		fl_color(0, 0, 0);
+		if (scenario.packages[i].ID >= 0) {
+			char s[80];
+			sprintf_s(s, "%d", scenario.packages[i].ID);
+			fl_font(FL_HELVETICA, 18);
+			fl_draw(s, x + 5, y + 5);
+		}
 	}
 }
 
@@ -271,6 +280,15 @@ void Canvas::drawTargets() {
 		scenToCanvasCoord(x, y);
 		fl_color(25, 200, 25);
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+
+		// Draw target ID
+		fl_color(0, 0, 0);
+		if (scenario.targets[i].ID >= 0) {
+			char s[80];
+			sprintf_s(s, "%d", scenario.targets[i].ID);
+			fl_font(FL_HELVETICA, 18);
+			fl_draw(s, x + 5, y + 5);
+		}
 	}
 }
 
