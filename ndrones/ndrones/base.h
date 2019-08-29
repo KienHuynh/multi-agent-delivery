@@ -65,6 +65,8 @@ public:
 
 class Agent {
 public:
+	int ID;
+
 	// Initial location
 	Point2D loc0;
 	// Current location
@@ -84,10 +86,10 @@ public:
 	// Occupied by a task or not
 	bool isAvail;
 
-	Agent(int _x, int _y, float _v);
-	Agent(Point2D _loc0, float _v);
-	Agent(int _x, int _y, float _v, float _delay);
-	Agent(Point2D, float _v, float _delay);
+	Agent(int _ID, int _x, int _y, float _v);
+	Agent(int _ID, Point2D _loc0, float _v);
+	Agent(int _ID, int _x, int _y, float _v, float _delay);
+	Agent(int _ID, Point2D, float _v, float _delay);
 
 	// Compute the time to go to point p based on current loc and velocity
 	float timing(Point2D);
@@ -119,6 +121,7 @@ public:
 // Basic line animation
 // This works by specifying a start time and end time of an animation, along with a start point and end point
 // Each time the clock tick, the drawing function will interpolate a line segment between the start and end
+// There can be previous animation to an animation, which makes the current animation waits until the previous one is done
 class LineAnimation {
 public:
 	Point2D start;
@@ -130,6 +133,8 @@ public:
 
 	// Store the previous timer, used to calculate the current line segment (span from prevPoint to currentPoint)
 	float prevTimer;
+	// This is a list of previous animations this animation has to wait
+	std::vector<int> prevAni;
 	// Specify if the current animation is active or not
 	bool active;
 
