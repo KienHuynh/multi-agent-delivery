@@ -19,7 +19,7 @@ public:
 	int solverType;
 
 	std::vector<Agent> agents;
-	std::vector<std::vector<LineAnimation>> anis;
+	std::vector<LineAnimation> anis;
 
 	float maxSpeed, minSpeed;
 	int minX, maxX, minY, maxY;
@@ -143,4 +143,9 @@ private:
 	// @param[in] k the index to be avoided
 	// @return float
 	float maxValWithoutK(float *arr, int size, int k);
+
+	void updateReusedAgent(std::vector<Agent> & _agents, std::vector<Point2D> _pointQueue);
+
+	// Check if a list of agents contain another agent using their ID
+	bool containAgent(std::vector<Agent> _agents, Agent a);
 };

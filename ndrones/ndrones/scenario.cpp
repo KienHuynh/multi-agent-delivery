@@ -144,7 +144,7 @@ void Scenario::loadFile(const char* fname) {
 			minSpeed = v;
 		}
 
-		Agent a(x, y, v);
+		Agent a(i, x, y, v);
 		agents.push_back(a);
 	}
 	// Sort the agents by speed
@@ -181,7 +181,7 @@ void Scenario::ecld2DType0DynamicNMCommon(
 		int bestPackageID = -1;
 		for (int ip = 0; ip < _packages.size(); ip++) {
 			PointState ps_ip = _points[_packages[ip].gridRef];
-			float time = _agents[0].timing(ps_ip.p) + _agents[0].timing(ps_ip.p, _points[i].p);
+			float time = _agents[0].timing(ps_ip.p) + _agents[0].timing(ps_ip.p, _points[i].p) + _agents[0].delay;
 
 			if (bestTime == -1 || bestTime > time) {
 				bestTime = time;
@@ -204,7 +204,7 @@ void Scenario::ecld2DType0DynamicNMCommon(
 			// Find the best handoff point j so that it can travel to i in the shortest time
 			for (int j = 0; j < pointsCopy.size(); j++) {
 
-				float timeTo_j = _agents[k].timing(pointsCopy[j].p);
+				float timeTo_j = _agents[k].timing(pointsCopy[j].p) + _agents[k].delay;
 				// Factor in waiting time
 				timeTo_j = max(timeTo_j, pointsCopy[j].bestTime);
 
@@ -303,7 +303,7 @@ DesignatedPoint Scenario::findBestTarget(std::vector<PointState> _points, std::v
 			best_t = t;
 		}
 	}
-	return targets[best_t];
+	return _targets[best_t];
 }
 
 
@@ -322,6 +322,28 @@ float Scenario::maxValWithoutK(float *arr, int size, int k) {
 	delete copy;
 
 	return m;
+}
+
+
+void Scenario::updateReusedAgent(std::vector<Agent> & _agents, std::vector<Point2D> _pointQueue) {
+	float prevTime = 0;
+	for (int i = 0; i < _agents.size(); i++) {
+		float timeToPoint_i = max(prevTime, _agents[i].timing(_pointQueue[i]) + _agents[i].delay);
+		float time_iToHandOff = _agents[i].timing(_pointQueue[i], _pointQueue[i + 1]);
+		
+		prevTime = timeToPoint_i + time_iToHandOff;
+		_agents[i].delay = prevTime;
+		_agents[i].loc0 = _pointQueue[i + 1];
+		_agents[i].loc = _pointQueue[i + 1];
+	}
+}
+
+
+bool Scenario::containAgent(std::vector<Agent> _agents, Agent a) {
+	for (const auto & _agent : _agents) {
+		if (_agent.ID == a.ID) return true;
+	}
+	return false;
 }
 
 
@@ -346,99 +368,137 @@ void Scenario::ecld2DType1DynamicNM() {
 	bestPointQueues = new std::vector<Point2D>[activeID.size()];
 	bestTargets = new DesignatedPoint[activeID.size()];
 
-	std::vector<PointState> pointsCopy;
-	std::vector<Agent> agentsCopy, agentsCopyWithout_k;
 
-	// Split agents into groups, each belong to a matching
-	// i.e. the conflict solving stage
-	for (int k = 0; k < agents.size(); k++) {
+	float* prevBestTimes = new float[activeID.size()];
+	for (int i = 0; i < activeID.size(); i++) {
+		prevBestTimes[i] = INFINITY;
+	}
 
-		// Store the best delivery time for each matching, assume that this matching uses all available drones
-		float* bestTimes = new float[activeID.size()];
-		// Store the best delivery time for each matching without the "k" agent
-		float* bestTimesWithout_k = new float[activeID.size()];
-
-		// Compute the "opt" solution for each matching with the same pool of agents
-		// There might be agent(s) appearing in more than one matching
-		for (int i = 0; i < activeID.size(); i++) {
-			int matchID = activeID[i];
-			agentsCopy = agents;
-			agentsCopyWithout_k = agents;
-
-			// Remove all drones (up to k-1) that don't belong to this particular matching
-			for (int j = k-1; j >= 0; j--) {
-				if ((std::find(bestAgentQueues[i].begin(), bestAgentQueues[i].end(), agents[j])) == bestAgentQueues[i].end()) {
-					agentsCopy.erase(agentsCopy.begin() + j);
-					agentsCopyWithout_k.erase(agentsCopyWithout_k.begin() + j);
-				}
-			}
-
-			// Remove the k-th drone for agentsCopyWithout_k
-			agentsCopyWithout_k.erase(
-				std::find(agentsCopyWithout_k.begin(), agentsCopyWithout_k.end(), agents[k])
-			);
-
-			std::vector<DesignatedPoint> packagesOfID;
-			std::vector<DesignatedPoint> targetsOfID;
-			std::copy_if(packages.begin(), packages.end(), std::back_inserter(packagesOfID),
-				[&](DesignatedPoint p) {return p.ID == matchID; });
-			std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID),
-				[&](DesignatedPoint p) {return p.ID == matchID; });
-
-			// Solve for all available agents
-			pointsCopy = points;
-			ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID, pointsCopy);
-			bestTimes[i] = findBestTimeFromTargets(pointsCopy, targetsOfID);
-
-			// Solve for all available agents but the k-th one
-			if (agentsCopyWithout_k.size() > 0) {
-				pointsCopy = points;
-				ecld2DType0DynamicNMCommon(agentsCopyWithout_k, packagesOfID, pointsCopy);
-				bestTimesWithout_k[i] = findBestTimeFromTargets(pointsCopy, targetsOfID);
-			}
-			else {
-				// Only happens in the last loop
-				bestTimesWithout_k[i] = INFINITY;
-			}
-		}
-		
-		// Compare the results. Assign the k-th agent to a matching so that the overall time after assignment would increase with the smallest amount
-		float overallTime = *std::max_element(bestTimes, bestTimes + activeID.size());
-		float newOverallTime = -1;
-		int assignment = -1;
-
-		for (int i = 0; i < activeID.size(); i++) {
-			// Check if k-th drone is used
-			if (bestTimes[i] != bestTimesWithout_k[i]) {
-				float tmp = maxValWithoutK(bestTimesWithout_k, activeID.size(), i);
-				if (assignment == -1 || newOverallTime > tmp) {
-					assignment = i;
-					newOverallTime = tmp;
-				}
-			}
-		}
-
-		if (assignment != -1) bestAgentQueues[assignment].push_back(agents[k]);
+	// Storing packages and targets of corresponding ID
+	std::vector<DesignatedPoint>* packagesOfID = new std::vector<DesignatedPoint>[activeID.size()];
+	std::vector<DesignatedPoint>* targetsOfID = new std::vector<DesignatedPoint>[activeID.size()];
+	for (int a = 0; a < activeID.size(); a++) {
+		std::copy_if(packages.begin(), packages.end(), std::back_inserter(packagesOfID[a]),
+			[&](DesignatedPoint p) {return p.ID == activeID[a]; });
+		std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID[a]),
+			[&](DesignatedPoint p) {return p.ID == activeID[a]; });
 	}
 	
-	// Re-compute the solution with the above assignments
-	for (int i = 0; i < activeID.size(); i++) {
-		int matchID = activeID[i];
-		pointsCopy = points;
-		
-		std::vector<DesignatedPoint> packagesOfID;
-		std::vector<DesignatedPoint> targetsOfID;
-		std::copy_if(packages.begin(), packages.end(), std::back_inserter(packagesOfID),
-			[&](DesignatedPoint p) {return p.ID == matchID; });
-		std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID),
-			[&](DesignatedPoint p) {return p.ID == matchID; });
 
-		ecld2DType0DynamicNMCommon(bestAgentQueues[i], packagesOfID, pointsCopy);
-		bestTargets[i] = findBestTarget(pointsCopy, targetsOfID);
-		float bestTime = findBestTimeFromTargets(pointsCopy, targetsOfID);
-		bestPointQueues[i] = pointsCopy[bestTargets[i].gridRef].pointQueue;
+	std::vector<PointState> pointsCopy;
+	std::vector<Agent> newAgents, agentsCopy, agentsCopyWithout_k;
+	newAgents = agents;
+	
+	for (int a = 0; a < activeID.size(); a++) {
+		// Split agents into groups, each belong to a matching
+		// i.e. the conflict solving stage
+		for (int k = 0; k < newAgents.size(); k++) {
+
+			// Store the best delivery time for each matching, assume that this matching uses all available drones
+			float* bestTimes = new float[activeID.size()];
+			// Store the best delivery time for each matching without the "k" agent
+			float* bestTimesWithout_k = new float[activeID.size()];
+
+			// Compute the "opt" solution for each matching with the same pool of agents
+			// There might be agent(s) appearing in more than one matching
+			for (int i = 0; i < activeID.size(); i++) {
+				if (containAgent(bestAgentQueues[a], newAgents[k])) continue;
+
+				int matchID = activeID[i];
+				agentsCopy = newAgents;
+				agentsCopyWithout_k = newAgents;
+
+				// Remove all drones (up to k-1) that don't belong to this particular matching
+				for (int j = k - 1; j >= 0; j--) {
+					if (!containAgent(bestAgentQueues[i], newAgents[j])) {
+						agentsCopy.erase(agentsCopy.begin() + j);
+						agentsCopyWithout_k.erase(agentsCopyWithout_k.begin() + j);
+					}
+				}
+
+				// Remove the k-th drone for agentsCopyWithout_k
+				agentsCopyWithout_k.erase(
+					std::find(agentsCopyWithout_k.begin(), agentsCopyWithout_k.end(), newAgents[k])
+				);
+
+				// Solve for all available agents
+				pointsCopy = points;
+				ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[i], pointsCopy);
+				bestTimes[i] = findBestTimeFromTargets(pointsCopy, targetsOfID[i]);
+
+				// Solve for all available agents but the k-th one
+				if (agentsCopyWithout_k.size() > 0) {
+					pointsCopy = points;
+					ecld2DType0DynamicNMCommon(agentsCopyWithout_k, packagesOfID[i], pointsCopy);
+					bestTimesWithout_k[i] = findBestTimeFromTargets(pointsCopy, targetsOfID[i]);
+				}
+				else {
+					// Only happens in the last loop
+					bestTimesWithout_k[i] = INFINITY;
+				}
+			}
+
+			// Compare the results. Assign the k-th agent to a matching so that the overall time after assignment would increase with the smallest amount
+			float overallTime = *std::max_element(bestTimes, bestTimes + activeID.size());
+			float newOverallTime = -1;
+			int assignment = -1;
+
+			for (int i = 0; i < activeID.size(); i++) {
+				// Check if k-th drone is used
+				if (bestTimes[i] != bestTimesWithout_k[i]) {
+					float tmp = maxValWithoutK(bestTimesWithout_k, activeID.size(), i);
+					if ((assignment == -1 || newOverallTime > tmp) && bestTimes[i] <= prevBestTimes[i]) {
+						assignment = i;
+						newOverallTime = tmp;
+					}
+				}
+			}
+
+			if (assignment != -1) {
+				bestAgentQueues[assignment].push_back(newAgents[k]);
+				prevBestTimes[assignment] = bestTimes[assignment];
+			}
+		}
+
+		for (int i = 0; i < activeID.size(); i++) {
+			if (bestAgentQueues[i].size() == 0) continue;
+			int matchID = activeID[i];
+			pointsCopy = points;
+
+			/*for (int j = 0; j < bestAgentQueues[i].size(); j++) {
+				newAgents.erase(std::find(newAgents.begin(), newAgents.end(), bestAgentQueues[i][j]));
+			}*/
+
+			for (int j = newAgents.size() - 1; j >= 0; j--) {
+				if (containAgent(bestAgentQueues[i], newAgents[j])) newAgents.erase(newAgents.begin() + j);
+			}
+
+			ecld2DType0DynamicNMCommon(bestAgentQueues[i], packagesOfID[i], pointsCopy);
+			DesignatedPoint _bestTarget = findBestTarget(pointsCopy, targetsOfID[i]);
+
+			std::vector<Point2D> pointQueue = pointsCopy[_bestTarget.gridRef].pointQueue;
+			pointQueue.push_back(pointsCopy[_bestTarget.gridRef].p);
+
+			std::vector<Agent> reusedAgents = bestAgentQueues[i];
+			updateReusedAgent(reusedAgents, pointQueue);
+			// Reinsert reused agents into newAgents
+			newAgents.insert(newAgents.end(), reusedAgents.begin(), reusedAgents.end());
+		}
+
+		 std::sort(newAgents.begin(), newAgents.end());
+	}
+
+	// Re-compute the solution with the above assignments
+	for (int a = 0; a < activeID.size(); a++) {
+		int matchID = activeID[a];
+		pointsCopy = points;
+
+		ecld2DType0DynamicNMCommon(bestAgentQueues[a], packagesOfID[a], pointsCopy);
+		bestTargets[a] = findBestTarget(pointsCopy, targetsOfID[a]);
+		float bestTime = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
+		bestPointQueues[a] = pointsCopy[bestTargets[a].gridRef].pointQueue;
 		// Shouldn't be different
-		bestAgentQueues[i] = pointsCopy[bestTargets[i].gridRef].agentQueue;
+		bestAgentQueues[a] = pointsCopy[bestTargets[a].gridRef].agentQueue;
 	}
 
 	// TODO: Insert unused/available agent into the list as a new one according to its speed & delay time
@@ -517,29 +577,34 @@ void Scenario::createAnimation() {
 					agentQ[i].timing(tmpAni1.start, tmpAni1.end);
 				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
 			}
-			tmpAni.push_back(tmpAni0);
-			tmpAni.push_back(tmpAni1);
-			anis.push_back(tmpAni);
+
+			// These are only specific to this problem only because we know that each agent only generates 2 animations
+			tmpAni1.prevAni.push_back(i * 2);
+			if (i > 0) tmpAni1.prevAni.push_back((i - 1) * 2 + 1);
+			anis.push_back(tmpAni0);
+			anis.push_back(tmpAni1);
 		}
 		// Do another run to add waiting time
 		for (int i = 1; i < anis.size(); i++) {
-			float prevAgentAniEndTime = anis[i - 1][anis[i - 1].size() - 1].endTime;
-			if (anis[i][0].endTime < prevAgentAniEndTime) {
-				float diff = prevAgentAniEndTime - anis[i][0].endTime;
-
-				// Only add wait time after handoff
-				for (int j = 1; j < anis[i].size(); j++) {
-					anis[i][j].startTime += diff;
-					anis[i][j].endTime += diff;
-				}
-
+			if (anis[i].prevAni.size() == 0) continue;
+			float maxPrevTime = anis[anis[i].prevAni[0]].endTime;
+			
+			for (int j = 1; j < anis[i].prevAni.size(); j++) {
+				if (maxPrevTime < anis[anis[i].prevAni[j]].endTime) maxPrevTime = anis[anis[i].prevAni[j]].endTime;
 			}
+			
+			float diff = maxPrevTime - anis[i].startTime;
+			if (diff < 0) continue;
+			anis[i].startTime += diff;
+			anis[i].endTime += diff;
 		}
 	}
 
+	// TODO: Add initial delay time
 	if (problemType == 1) {
 		for (int a = 0; a < activeID.size(); a++) {
 			int matchID = activeID[a];
+			int aniSize = anis.size();
 			float bestTime = points[bestTargets[a].gridRef].bestTime;
 
 			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
@@ -552,7 +617,7 @@ void Scenario::createAnimation() {
 
 					tmpAni0.start = bestAgentQueues[a][i].loc0;
 					tmpAni0.end = bestPointQueues[a][i];
-					tmpAni0.startTime = 0;
+					tmpAni0.startTime = bestAgentQueues[a][i].delay;
 					tmpAni0.endTime = tmpAni0.startTime +
 						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
 					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
@@ -573,7 +638,7 @@ void Scenario::createAnimation() {
 
 					tmpAni0.start = bestAgentQueues[a][i].loc0;
 					tmpAni0.end = bestPointQueues[a][i];
-					tmpAni0.startTime = 0;
+					tmpAni0.startTime = bestAgentQueues[a][i].delay;
 					tmpAni0.endTime = tmpAni0.startTime +
 						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
 					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
@@ -585,23 +650,25 @@ void Scenario::createAnimation() {
 						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
 					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
 				}
-				tmpAni.push_back(tmpAni0);
-				tmpAni.push_back(tmpAni1);
-				anis.push_back(tmpAni);
+				// These are only specific to this problem only because we know that each agent only generates 2 animations
+				tmpAni1.prevAni.push_back(i * 2 + aniSize);
+				if (i > 0) tmpAni1.prevAni.push_back((i - 1) * 2 + 1 + aniSize);
+				anis.push_back(tmpAni0);
+				anis.push_back(tmpAni1);
 			}
 			// Do another run to add waiting time
 			for (int i = 1; i < anis.size(); i++) {
-				float prevAgentAniEndTime = anis[i - 1][anis[i - 1].size() - 1].endTime;
-				if (anis[i][0].endTime < prevAgentAniEndTime) {
-					float diff = prevAgentAniEndTime - anis[i][0].endTime;
+				if (anis[i].prevAni.size() == 0) continue;
+				float maxPrevTime = anis[anis[i].prevAni[0]].endTime;
 
-					// Only add wait time after handoff
-					for (int j = 1; j < anis[i].size(); j++) {
-						anis[i][j].startTime += diff;
-						anis[i][j].endTime += diff;
-					}
-
+				for (int j = 1; j < anis[i].prevAni.size(); j++) {
+					if (maxPrevTime < anis[anis[i].prevAni[j]].endTime) maxPrevTime = anis[anis[i].prevAni[j]].endTime;
 				}
+
+				float diff = maxPrevTime - anis[i].startTime;
+				if (diff < 0) continue;
+				anis[i].startTime += diff;
+				anis[i].endTime += diff;
 			}
 		}
 		
