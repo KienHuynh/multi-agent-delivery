@@ -313,14 +313,30 @@ void Canvas::drawAnimation() {
 	
 	for (int i = 0; i < scenario.anis.size(); i++) {
 		LineAnimation ani = scenario.anis[i];
+		
+
 		// TODO: redundant codes
-		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime) {
-			scenario.anis[i].active = true;
+		// Special treatment for the first loop
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.anis[i].active == false) {
 			if (scenario.anis[i].prevTimer < 0) {
 				scenario.anis[i].prevTimer = timeElapsed;
 				continue;
 			}
 
+			scenario.anis[i].active = true;
+			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+				/ ani.duration) + ani.start;
+			Point2D prevP = ani.start;
+			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+			fl_line_style(FL_SOLID, 4);
+			scenToCanvasCoord(newP.x, newP.y);
+			scenToCanvasCoord(prevP.x, prevP.y);
+			newP.y = canvasHeight - newP.y;
+			prevP.y = canvasHeight - prevP.y;
+			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+		}
+
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.anis[i].active == true) {
 			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
 					/ ani.duration) + ani.start;
 			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
@@ -332,15 +348,6 @@ void Canvas::drawAnimation() {
 			newP.y = canvasHeight - newP.y;
 			prevP.y = canvasHeight - prevP.y;
 			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
-
-			// Pie
-			// Using linear interpolation to draw new point
-			//Point2D aniLoc = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
-			//	/ ani.duration) + ani.start;
-			//fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
-			//scenToCanvasCoord(aniLoc.x, aniLoc.y);
-			//fl_pie(((int)newP.x) - 5, ((int)newP.y) - 5, 10, 10, 0, 360);
-			//scenario.anis[i][j].prevTimer = timeElapsed;
 		}
 		// Last loop
 		if (timeElapsed > ani.endTime && ani.active == true) {
