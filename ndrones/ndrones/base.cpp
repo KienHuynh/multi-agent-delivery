@@ -57,6 +57,12 @@ Point2D Point2D::operator*(float const f) {
 }
 
 
+bool Point2D::operator == (Point2D &obj) {
+	if (x == obj.x && y == obj.y) return true;
+	else return false;
+}
+
+
 bool Point2D::operator == (Point2D const &obj) {
 	if (x == obj.x && y == obj.y) return true;
 	else return false;

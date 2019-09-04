@@ -41,6 +41,7 @@ public:
 	Point2D operator / (float const);
 	Point2D operator * (float const);
 	bool operator == (Point2D const &obj);
+	bool operator == (Point2D &obj);
 };
 
 
