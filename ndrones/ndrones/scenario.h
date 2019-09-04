@@ -3,6 +3,9 @@
  * This file contains the main scenario class
 */
 #pragma once
+
+#include <array>
+
 #include "base.h"
 
 
@@ -147,5 +150,30 @@ private:
 	void updateReusedAgent(std::vector<Agent> & _agents, std::vector<Point2D> _pointQueue);
 
 	// Check if a list of agents contain another agent using their ID
+	bool containAgentID(std::vector<Agent> _agents, Agent a);
+
+	// Check if a list of agents contain another agent (every variable has to be the same)
 	bool containAgent(std::vector<Agent> _agents, Agent a);
+
+	// Resolving conflict between all package-target matchings that share some agents.
+	// @param[in] _points the point grid.
+	// @param[in] _agents the agent list.
+	// @param[in] _packageOfID array of list of packages, separated based on their IDs.
+	// @param[in] _targetsOfID array of list of targets, separated based on their IDs.
+	// @param[in] _ativeID list of active ID.
+	// @param[in] _agentAssignment matching-agent assignment table, 0 at [i][j] means agent j was assigned to the i-th matching, 1 if it is assigned.
+	// @param[in] _bestTimes list of best time computed for each matching when all agents are available for it
+	// @param[out] bestMatchingInd the best matching that will be used after all conflicts are resolved.
+	// @param[out] bestAgentInd the best agent to be assigned to the above matching
+	// @return isConflict true if there was a conflict, false if there was not.
+	bool conflictResolve(
+		std::vector<PointState> _points, 
+		std::vector<Agent> _agents,
+		std::vector<DesignatedPoint>* _packagesOfID, 
+		std::vector<DesignatedPoint>* _targetsOfID,
+		std::vector<int> _activeID, 
+		int** _agentAssignment,
+		int* _bestTimes,
+		int &bestMatchingInd, 
+		int &bestAgentInd);
 };
