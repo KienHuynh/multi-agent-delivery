@@ -249,6 +249,12 @@ void Canvas::drawAgents() {
 		fl_color(fl_rgb_color(25, 25, color));
 
 		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+
+		fl_color(0, 0, 0);
+		char s[80];
+		sprintf_s(s, "%d", (int) scenario.agents[i].v);
+		fl_font(FL_HELVETICA, 18);
+		fl_draw(s, x + 10, y + 5);
 	}
 }
 
