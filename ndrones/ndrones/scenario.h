@@ -167,13 +167,18 @@ private:
 	// @param[out] bestAgentInd the best agent to be assigned to the above matching
 	// @return isConflict true if there was a conflict, false if there was not.
 	bool conflictResolve(
-		std::vector<PointState> _points, 
+		std::vector<PointState> _points,
 		std::vector<Agent> _agents,
-		std::vector<DesignatedPoint>* _packagesOfID, 
+		std::vector<DesignatedPoint>* _packagesOfID,
 		std::vector<DesignatedPoint>* _targetsOfID,
-		std::vector<int> _activeID, 
+		std::vector<int> _activeID,
 		int** _agentAssignment,
-		int* _bestTimes,
-		int &bestMatchingInd, 
+		float* _bestTimes,
+		int &bestMatchingInd,
 		int &bestAgentInd);
+
+	int findVectorIndexWithID(std::vector<Agent> _agents, Agent a);
+	int findVectorIndexFull(std::vector<Agent> _agents, Agent a);
+
+	void removeSharedAgents(std::vector<Agent>* queues, int id, std::vector<Agent> &agents);
 };

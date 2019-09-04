@@ -364,7 +364,7 @@ bool Scenario::conflictResolve(
 	std::vector<DesignatedPoint>* _targetsOfID,
 	std::vector<int> _activeID, 
 	int** _agentAssignment,
-	int* _bestTimes,
+	float* _bestTimes,
 	int &bestMatchingInd, 
 	int &bestAgentInd) {
 
@@ -395,10 +395,26 @@ bool Scenario::conflictResolve(
 				std::vector<Agent> agentsCopy = _agents;
 				std::vector<PointState> pointsCopy = _points;
 
-				agentsCopy.erase(agentsCopy.begin() + k);
+				// Removed shared agents
+				removeSharedAgents(bestAgentQueues, a, agentsCopy);
 
-				ecld2DType0DynamicNMCommon(agentsCopy, _packagesOfID[a], pointsCopy);
-				bestTimesWithout_k[a][k] = findBestTimeFromTargets(pointsCopy, _targetsOfID[a]);
+				for (int i = 0; i < bestAgentQueues[a].size(); i++) {
+					int vectorInd = findVectorIndexWithID(agentsCopy, bestAgentQueues[a][i]);
+					agentsCopy[vectorInd] = bestAgentQueues[a][i];
+				}
+
+				int vectorIndex = findVectorIndexWithID(agentsCopy, _agents[k]);
+				if (vectorIndex < 0) continue;
+
+				agentsCopy.erase(agentsCopy.begin() + vectorIndex);
+
+				if (agentsCopy.size() == 0) {
+					bestTimesWithout_k[a][k] = INFINITY;
+				}
+				else {
+					ecld2DType0DynamicNMCommon(agentsCopy, _packagesOfID[a], pointsCopy);
+					bestTimesWithout_k[a][k] = findBestTimeFromTargets(pointsCopy, _targetsOfID[a]);
+				}
 			}
 			
 			for (const auto a1 : matchingInd) {
@@ -429,6 +445,35 @@ bool Scenario::conflictResolve(
 	}
 
 	return isConflict;
+}
+
+
+int Scenario::findVectorIndexWithID(std::vector<Agent> _agents, Agent a) {
+	for (int k = 0; k < _agents.size(); k++) {
+		if (_agents[k].ID == a.ID) return k;
+	}
+	return -1;
+}
+
+
+int Scenario::findVectorIndexFull(std::vector<Agent> _agents, Agent a) {
+	for (int k = 0; k < _agents.size(); k++) {
+		if (_agents[k].ID == a.ID &&
+			_agents[k].delay == a.delay) return k;
+	}
+	return -1;
+}
+
+
+void Scenario::removeSharedAgents(std::vector<Agent>* queues, int id, std::vector<Agent> &agents) {
+	for (int a = 0; a < activeID.size(); a++) {
+		if (a == id) continue;
+		for (int i = 0; i < queues[a].size(); i++) {
+			int removalIndex = findVectorIndexFull(agents, queues[a][i]);
+			if (removalIndex < 0) continue;
+			agents.erase(agents.begin() + removalIndex);
+		}
+	}
 }
 
 
@@ -476,151 +521,139 @@ void Scenario::ecld2DType1DynamicNM() {
 	// Stopping flag, is true if there is no change
 	bool stop = false;
 	
-	while (!stop) {
+	for (int loop = 0; loop < activeID.size(); loop ++) {
+		std::cout << loop << std::endl;
 
-		float* bestTimes = new float[activeID.size()];
-		// This table store 0/1 values, indicating if an agent is used in a matching or not
-		// Used for conflict resolving
-		int** agentAssignment = new int*[activeID.size()];
-		for (int a = 0; a < activeID.size(); a++) {
-			agentAssignment[a] = new int[agents.size()];
-			for (int k = 0; k < agents.size(); k++) {
-				agentAssignment[a][k] = 0;
+		stop = false;
+		while (!stop) {
+			float* bestTimes = new float[activeID.size()];
+			// This table store 0/1 values, indicating if an agent is used in a matching or not
+			// Used for conflict resolving
+			int** agentAssignment = new int*[activeID.size()];
+			for (int a = 0; a < activeID.size(); a++) {
+				agentAssignment[a] = new int[agents.size()];
+				for (int k = 0; k < agents.size(); k++) {
+					agentAssignment[a][k] = 0;
+				}
 			}
+
+			for (int a = 0; a < activeID.size(); a++) {
+				int matchID = activeID[a];
+				agentsCopy = newAgents;
+
+				// Remove all agents that is already belong to another matching
+				removeSharedAgents(bestAgentQueues, a, agentsCopy);
+
+				// Inserting its old agent from bestAgentQueues[a]
+				// agentsCopy.insert(agentsCopy.end(), bestAgentQueues[a].begin(), bestAgentQueues[a].end());
+				// std::sort(agentsCopy.begin(), agentsCopy.end());
+
+				for (int i = 0; i < bestAgentQueues[a].size(); i++) {
+					int vectorInd = findVectorIndexWithID(agentsCopy, bestAgentQueues[a][i]);
+					if (vectorInd < 0) {
+						agentsCopy.push_back(bestAgentQueues[a][i]);
+					}
+					else {
+						agentsCopy[vectorInd] = bestAgentQueues[a][i];
+					}
+				}
+				std::sort(agentsCopy.begin(), agentsCopy.end());
+
+				if (agentsCopy.size() == 0) continue;
+
+				pointsCopy = points;
+				ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[a], pointsCopy);
+				bestTimes[a] = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
+				DesignatedPoint bestTarget = findBestTarget(pointsCopy, targetsOfID[a]);
+				std::vector<Agent> agentQueue_a = pointsCopy[bestTarget.gridRef].agentQueue;
+
+				for (int i = 0; i < agentQueue_a.size(); i++) {
+					int vectorInd = findVectorIndexWithID(newAgents, agentQueue_a[i]);
+					// If this matching already has this agent (assigned from a previous loop)
+					// There is no point in adding it now
+					if (containAgentID(bestAgentQueues[a], agentQueue_a[i])) continue;
+					agentAssignment[a][vectorInd] = 1;
+				}
+			}
+
+			int bestMatchingInd, bestAgentInd;
+			bool isConflict = conflictResolve(
+				points,
+				newAgents,
+				packagesOfID,
+				targetsOfID,
+				activeID,
+				agentAssignment,
+				bestTimes,
+				bestMatchingInd,
+				bestAgentInd);
+
+			if (isConflict) {
+				bestAgentQueues[bestMatchingInd].push_back(newAgents[bestAgentInd]);
+			}
+			else stop = true;
+
+			for (int a = 0; a < activeID.size(); a++) {
+				delete[] agentAssignment[a];
+			}
+			delete[] agentAssignment;
+			delete bestTimes;
 		}
 
+		// TODO: Re-add used agents here
+		// Compute the solution for each matching using agents from bestAgentQueues
+		// and remaining agents that weren't assigned to anything (they are either generating
+		// no conflict or they have no use)
+		std::vector<Agent> tmpAgents = agents;
 		for (int a = 0; a < activeID.size(); a++) {
-			int matchID = activeID[a];
+			pointsCopy = points;
 			agentsCopy = newAgents;
 
-			pointsCopy = points;
-			ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[a], pointsCopy);
-			bestTimes[a] = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
-			DesignatedPoint bestTarget = findBestTarget(pointsCopy, targetsOfID[a]);
-			std::vector<Agent> agentQueue_a = pointsCopy[bestTarget.gridRef].agentQueue;
+			// Remove all agents that is already belong to another matching
+			removeSharedAgents(bestAgentQueues, a, agentsCopy);
 
-			for (int i = 0; i < agentQueue_a.size(); i++) {
-				agentAssignment[a][i] = 1;
+			// Inserting its old agent from bestAgentQueues[a]
+			// agentsCopy.insert(agentsCopy.end(), bestAgentQueues[a].begin(), bestAgentQueues[a].end());
+			// std::sort(agentsCopy.begin(), agentsCopy.end());
+
+			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
+				int vectorInd = findVectorIndexWithID(agentsCopy, bestAgentQueues[a][i]);
+				if (vectorInd < 0) {
+					agentsCopy.push_back(bestAgentQueues[a][i]);
+				}
+				else {
+					agentsCopy[vectorInd] = bestAgentQueues[a][i];
+				}
+			}
+			std::sort(agentsCopy.begin(), agentsCopy.end());
+
+			if (agentsCopy.size() == 0) continue;
+
+			ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[a], pointsCopy);
+			DesignatedPoint bestTarget = findBestTarget(pointsCopy, targetsOfID[a]);
+			bestAgentQueues[a] = pointsCopy[bestTarget.gridRef].agentQueue;
+			
+			std::vector<Point2D> pointQueueTmp = pointsCopy[bestTarget.gridRef].pointQueue;
+			pointQueueTmp.push_back(pointsCopy[bestTarget.gridRef].p);
+			std::vector<Agent> agentQueueTmp = bestAgentQueues[a];
+			updateReusedAgent(agentQueueTmp, pointQueueTmp);
+
+			// Update newAgents list
+			// Multiple matchings can share one agent
+			// The agent state will be updated using the information from the matching that uses it last
+			for (int k = 0; k < agentQueueTmp.size(); k++) {
+				int vectorIndex = findVectorIndexWithID(tmpAgents, agentQueueTmp[k]);
+				if (tmpAgents[vectorIndex].delay < agentQueueTmp[k].delay) {
+					tmpAgents[vectorIndex] = agentQueueTmp[k];
+				}
 			}
 		}
-
-		// Resolving conflict
-
-
-		// Split agents into groups, each belong to a matching
-		// i.e. the conflict solving stage
-		//for (int k = 0; k < newAgents.size(); k++) {
-
-		//	// Store the best delivery time for each matching, assume that this matching uses all available drones
-		//	float* bestTimes = new float[activeID.size()];
-		//	// Store the best delivery time for each matching without the "k" agent
-		//	float* bestTimesWithout_k = new float[activeID.size()];
-
-		//	// Compute the "opt" solution for each matching with the same pool of agents
-		//	// There might be agent(s) appearing in more than one matching
-		//	for (int i = 0; i < activeID.size(); i++) {
-		//		// If the agent we are considering here is already in the fixed agent queue,
-		//		// there is no point in adding it again
-		//		if (containAgentID(bestAgentQueues[a], newAgents[k])) continue;
-
-		//		int matchID = activeID[i];
-		//		agentsCopy = newAgents;
-		//		agentsCopyWithout_k = newAgents;
-
-		//		// Remove all drones (up to k-1) that don't belong to this particular matching
-		//		for (int j = k - 1; j >= 0; j--) {
-		//			if (!containAgent(bestAgentQueues[i], newAgents[j])) {
-		//				agentsCopy.erase(agentsCopy.begin() + j);
-		//				agentsCopyWithout_k.erase(agentsCopyWithout_k.begin() + j);
-		//			}
-		//		}
-
-		//		// TODO: remove all shared agents between newAgents and bestAgentQueues[i]
-		//		// Then put the agents in bestAgentQueues back
-		//		
-
-
-		//		// Remove the k-th drone for agentsCopyWithout_k
-		//		agentsCopyWithout_k.erase(
-		//			std::find(agentsCopyWithout_k.begin(), agentsCopyWithout_k.end(), newAgents[k])
-		//		);
-
-		//		// Solve for all available agents
-		//		pointsCopy = points;
-		//		ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[i], pointsCopy);
-		//		bestTimes[i] = findBestTimeFromTargets(pointsCopy, targetsOfID[i]);
-
-		//		// Solve for all available agents but the k-th one
-		//		if (agentsCopyWithout_k.size() > 0) {
-		//			pointsCopy = points;
-		//			ecld2DType0DynamicNMCommon(agentsCopyWithout_k, packagesOfID[i], pointsCopy);
-		//			bestTimesWithout_k[i] = findBestTimeFromTargets(pointsCopy, targetsOfID[i]);
-		//		}
-		//		else {
-		//			// Only happens in the last loop
-		//			bestTimesWithout_k[i] = INFINITY;
-		//		}
-		//	}
-
-		//	// Compare the results. Assign the k-th agent to a matching so that the overall time after assignment would increase with the smallest amount
-		//	float overallTime = *std::max_element(bestTimes, bestTimes + activeID.size());
-		//	float newOverallTime = -1;
-		//	int assignment = -1;
-
-		//	for (int i = 0; i < activeID.size(); i++) {
-		//		// Check if k-th drone is used
-		//		if (bestTimes[i] != bestTimesWithout_k[i]) {
-		//			float tmp = maxValWithoutK(bestTimesWithout_k, activeID.size(), i);
-		//			if ((assignment == -1 || newOverallTime > tmp) && bestTimes[i] <= prevBestTimes[i]) {
-		//				assignment = i;
-		//				newOverallTime = tmp;
-		//			}
-		//		}
-		//	}
-
-		//	if (assignment != -1) {
-		//		bestAgentQueues[assignment].push_back(newAgents[k]);
-		//		prevBestTimes[assignment] = bestTimes[assignment];
-		//	}
-		//}
-
-		//for (int i = 0; i < activeID.size(); i++) {
-		//	if (bestAgentQueues[i].size() == 0) continue;
-		//	int matchID = activeID[i];
-		//	pointsCopy = points;
-
-		//	/*for (int j = 0; j < bestAgentQueues[i].size(); j++) {
-		//		newAgents.erase(std::find(newAgents.begin(), newAgents.end(), bestAgentQueues[i][j]));
-		//	}*/
-
-		//	for (int j = newAgents.size() - 1; j >= 0; j--) {
-		//		if (containAgentID(bestAgentQueues[i], newAgents[j])) newAgents.erase(newAgents.begin() + j);
-		//	}
-
-		//	ecld2DType0DynamicNMCommon(bestAgentQueues[i], packagesOfID[i], pointsCopy);
-		//	DesignatedPoint _bestTarget = findBestTarget(pointsCopy, targetsOfID[i]);
-
-		//	std::vector<Point2D> pointQueue = pointsCopy[_bestTarget.gridRef].pointQueue;
-		//	pointQueue.push_back(pointsCopy[_bestTarget.gridRef].p);
-
-		//	std::vector<Agent> reusedAgents = bestAgentQueues[i];
-		//	
-		//	updateReusedAgent(reusedAgents, pointQueue);
-		//	
-		//	// Reinsert reused agents into newAgents
-		//	newAgents.insert(newAgents.end(), reusedAgents.begin(), reusedAgents.end());
-		//}
-
-		// std::sort(newAgents.begin(), newAgents.end());
-		
-		for (int a = 0; a < activeID.size(); a++) {
-			delete [] agentAssignment[a];
-		}
-		delete [] agentAssignment;
-		delete bestTimes;
+		newAgents = tmpAgents;
 	}
+	
 
 	// Re-compute the solution with the above assignments
+	float overallTime = -1;
 	for (int a = 0; a < activeID.size(); a++) {
 		int matchID = activeID[a];
 		pointsCopy = points;
@@ -628,10 +661,12 @@ void Scenario::ecld2DType1DynamicNM() {
 		ecld2DType0DynamicNMCommon(bestAgentQueues[a], packagesOfID[a], pointsCopy);
 		bestTargets[a] = findBestTarget(pointsCopy, targetsOfID[a]);
 		float bestTime = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
+		if (overallTime == -1 || overallTime < bestTime) overallTime = bestTime;
 		bestPointQueues[a] = pointsCopy[bestTargets[a].gridRef].pointQueue;
 		// Shouldn't be different
 		bestAgentQueues[a] = pointsCopy[bestTargets[a].gridRef].agentQueue;
 	}
+	std::cout << "Overall time: " << overallTime << std::endl;
 
 	// TODO: replace dynamic array with a better data struct
 	delete[] packagesOfID;
