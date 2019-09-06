@@ -5,6 +5,7 @@ int Canvas::canvasHeight = 0;
 Scenario Canvas::scenario;
 
 bool GUI::bigRedrawSignal = 0;
+bool GUI::drawSignal = false;
 std::string GUI::canvasFileName = "";
 Canvas* GUI::canvas = NULL;
 
@@ -84,10 +85,15 @@ void GUI::solverCallback(Fl_Widget*w, void*data) {
 	Canvas::scenario.solve();
 	Canvas::scenario.createAnimation();
 	Canvas::scenario.aniStart = true;
+	canvas->redraw();
+}
+
+
+void GUI::drawSignalCallback(Fl_Widget*w, void*data) {
+	drawSignal = true;
 	auto now = std::chrono::system_clock::now().time_since_epoch();
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	Canvas::scenario.timer = ((float)mili) / 1000;
-	canvas->redraw();
 }
 
 
@@ -312,7 +318,7 @@ void Canvas::drawDiscretePoints() {
 
 // TODO: Should be in a separate animation class
 void Canvas::drawAnimation() {
-	if (!scenario.aniStart) return;
+	if (!scenario.aniStart || !GUI::drawSignal) return;
 	auto now = std::chrono::system_clock::now().time_since_epoch();
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	float timeElapsed = ((float)mili / 1000) - scenario.timer;
@@ -467,9 +473,9 @@ GUI::GUI(int winWidth, int winHeight) {
 	// Assign callbacks to corresponding buttons
 	runAllBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit, 160, 25, "Run");
 	runAllBu->callback(solverCallback);
-	runStepBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, 25, "Step");
-	//runStepBu->callback(maximumAreaCallbackStep);
-	clearBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 3, 160, 25, "Clear");
+	drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, 25, "Animate");
+	drawBu->callback(drawSignalCallback);
+	
 	//clearBu->callback(cloudClearCallback);
 	//randomBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 4, 160, 25, "Random");
 	//randomBu->callback(randomCallback);

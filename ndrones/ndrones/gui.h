@@ -110,12 +110,15 @@ public:
 	Fl_Button *runStepBu;
 	Fl_Button *runAllBu;
 	Fl_Button *randomBu;
+	Fl_Button *drawBu;
 	Fl_Button *clearBu;
 	Fl_Menu_Bar *menuBar;
 
 	Fl_Window *win;
 
 	static std::string canvasFileName;
+
+	static bool drawSignal;
 
 	// Big redraw signal makes the canvas wipe everything, it's a bit slower so normally the small signal is preferred
 	static bool bigRedrawSignal;
@@ -131,7 +134,8 @@ public:
 	static void saveResultCallback(Fl_Widget*w, void*data);
 	// Callback for the solver
 	static void solverCallback(Fl_Widget*w, void*data);
-
+	// Callback to set draw signal = true
+	static void drawSignalCallback(Fl_Widget*w, void*data);
 };
 
 #endif
