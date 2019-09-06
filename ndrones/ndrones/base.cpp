@@ -102,11 +102,16 @@ Agent::Agent(int _ID, int _x, int _y, float _v) {
 	v = _v;
 
 	delay = 0;
+	finTime = 0;
 
 	maxFuel = 0;
 	fuel = 0;
 
 	isAvail = true;
+	orderOfEx = 0;
+	prevMatching = -1;
+	currentMatching = -1;
+	nextMatching = -1;
 }
 
 
@@ -117,11 +122,16 @@ Agent::Agent(int _ID, Point2D _loc0, float _v) {
 	v = _v;
 
 	delay = 0;
+	finTime = 0;
 
 	maxFuel = 0;
 	fuel = 0;
 
 	isAvail = true;
+	orderOfEx = 0;
+	prevMatching = -1;
+	currentMatching = -1;
+	nextMatching = -1;
 }
 
 
@@ -134,11 +144,16 @@ Agent::Agent(int _ID, int _x, int _y, float _v, float _delay) {
 	v = _v;
 
 	delay = _delay;
+	finTime = 0;
 
 	maxFuel = 0;
 	fuel = 0;
 
 	isAvail = true;
+	orderOfEx = 0;
+	prevMatching = -1;
+	currentMatching = -1;
+	nextMatching = -1;
 }
 
 
@@ -150,11 +165,16 @@ Agent::Agent(int _ID, Point2D _loc0, float _v, float _delay) {
 	v = _v;
 
 	delay = _delay;
+	finTime = 0;
 
 	maxFuel = 0;
 	fuel = 0;
 
 	isAvail = true;
+	orderOfEx = 0;
+	prevMatching = -1;
+	currentMatching = -1;
+	nextMatching = -1;
 }
 
 

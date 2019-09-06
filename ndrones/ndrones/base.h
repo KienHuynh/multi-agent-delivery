@@ -67,6 +67,10 @@ public:
 class Agent {
 public:
 	int ID;
+	int orderOfEx;
+	int prevMatching;
+	int currentMatching;
+	int nextMatching;
 
 	// Initial location
 	Point2D loc0;
@@ -78,6 +82,9 @@ public:
 
 	// Initial delay time
 	float delay;
+
+	// Finishing time
+	float finTime;
 
 	// Max amount of fuel
 	float maxFuel;
