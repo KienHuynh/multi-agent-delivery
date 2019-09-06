@@ -40,6 +40,8 @@ public:
 	// Store the list of matching id (s)
 	std::vector<int> activeID;
 
+	std::string outputFileName;
+
 	// Variables storing the solution
 	std::vector<Agent>* bestAgentQueues;
 	std::vector<Point2D>* bestPointQueues;
@@ -177,8 +179,33 @@ private:
 		int &bestMatchingInd,
 		int &bestAgentInd);
 
+	// Given a vector of agents _agents, find the location of Agent a in _agents, using its ID
 	int findVectorIndexWithID(std::vector<Agent> _agents, Agent a);
+	// Given a vector of agents _agents, find the location of Agent a in _agents, using its ID and delayTime
 	int findVectorIndexFull(std::vector<Agent> _agents, Agent a);
 
-	void removeSharedAgents(std::vector<Agent>* queues, int id, std::vector<Agent> &agents);
+	// Remove any agents in _agents if it also exists in queues[i]
+	// However, if i == id, then no one will be removed
+	void removeSharedAgents(std::vector<Agent>* queues, int id, std::vector<Agent> &_agents);
+
+	// Return true if a.orderOfEx > b.orderOfEx
+	static bool compareOrderOfEx(Agent a, Agent b);
+
+	// Remove all agents in the list with orderOfEx greater than _orderOfEx
+	void removeGapAgents(std::vector<Agent> &_agents, int _id, int _orderOfEx);
+
+	// Check if this list contains agent a with bigger orer of execution
+	bool containAgentAfterOrder(std::vector<Agent> _agents, Agent a);
+
+	// Bag agents into some queues and sort them by order of executions
+	void bagAgentsByOrder(std::vector<Agent>* _agentQueues, std::vector<Agent>*& bag);
+
+	// Check if two queues of agents are equal
+	bool equalAgentQueue(std::vector<Agent>* qA, std::vector<Agent>* qB);
+
+	// Check if there is an empty queue here
+	bool missingQueue(std::vector<Agent>* qs);
+
+	// Write solution to a file
+	void writeSolution();
 };

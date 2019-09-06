@@ -85,6 +85,10 @@ void Scenario::loadDesignatedPolygon(
 
 
 void Scenario::loadFile(const char* fname) {
+	outputFileName = std::string(fname);
+	outputFileName = outputFileName.substr(outputFileName.find_last_of("/\\") + 1);
+	std::string::size_type const p(outputFileName.find_last_of('.'));
+	outputFileName = outputFileName.substr(0, p);
 
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
@@ -150,6 +154,19 @@ void Scenario::loadFile(const char* fname) {
 	// Sort the agents by speed
 	std::sort(agents.begin(), agents.end());
 }
+
+
+//void Scenario::writeSolution() {
+//	std::ofstream myfile;
+//	myfile.open("output\\" + outputFileName + ".txt");
+//	for (int a = 0; a < activeID.size(); a++) {
+//		myfile << a << " " << bestAgentQueues[a].size() << std::endl;
+//		for (int k = 0; k < bestAgentQueues[a].size(); k++) {
+//			//myfile << bestAgentQueues[a]. << " " << bestAgentQueues[a].size() << std::endl;
+//		}
+//	}
+//	myfile.close();
+//}
 
 
 float max(float x, float y) {
@@ -331,6 +348,10 @@ void Scenario::updateReusedAgent(std::vector<Agent> & _agents, std::vector<Point
 		float time_iToHandOff = _agents[i].timing(_pointQueue[i], _pointQueue[i + 1]);
 		
 		prevTime = timeToPoint_i + time_iToHandOff;
+		if (i < _agents.size() - 1) {
+			prevTime = max(prevTime, _agents[i + 1].delay + _agents[i + 1].timing(_pointQueue[i + 1]));
+		}
+
 		_agents[i].delay = prevTime;
 		_agents[i].loc0 = _pointQueue[i + 1];
 		_agents[i].loc = _pointQueue[i + 1];
@@ -351,6 +372,15 @@ bool Scenario::containAgent(std::vector<Agent> _agents, Agent a) {
 		if (_agent.ID == a.ID &&
 			_agent.delay == a.delay &&
 			a.loc == _agent.loc) return true;
+	}
+	return false;
+}
+
+
+bool Scenario::containAgentAfterOrder(std::vector<Agent> _agents, Agent a) {
+	for (const auto & _agent : _agents) {
+		if (_agent.ID == a.ID &&
+			a.orderOfEx < _agent.orderOfEx) return true;
 	}
 	return false;
 }
@@ -398,8 +428,11 @@ bool Scenario::conflictResolve(
 				// Removed shared agents
 				removeSharedAgents(bestAgentQueues, a, agentsCopy);
 
+				if (agentsCopy.size() < 1) continue;
+
 				for (int i = 0; i < bestAgentQueues[a].size(); i++) {
 					int vectorInd = findVectorIndexWithID(agentsCopy, bestAgentQueues[a][i]);
+					if (vectorInd < 0) continue;
 					agentsCopy[vectorInd] = bestAgentQueues[a][i];
 				}
 
@@ -459,7 +492,8 @@ int Scenario::findVectorIndexWithID(std::vector<Agent> _agents, Agent a) {
 int Scenario::findVectorIndexFull(std::vector<Agent> _agents, Agent a) {
 	for (int k = 0; k < _agents.size(); k++) {
 		if (_agents[k].ID == a.ID &&
-			_agents[k].delay == a.delay) return k;
+			_agents[k].delay == a.delay &&
+			_agents[k].orderOfEx == a.orderOfEx) return k;
 	}
 	return -1;
 }
@@ -474,6 +508,60 @@ void Scenario::removeSharedAgents(std::vector<Agent>* queues, int id, std::vecto
 			agents.erase(agents.begin() + removalIndex);
 		}
 	}
+}
+
+
+bool Scenario::compareOrderOfEx(Agent a, Agent b) {
+	return a.orderOfEx < b.orderOfEx;
+}
+
+
+void Scenario::removeGapAgents(std::vector<Agent> &_agents, int _id, int _orderOfEx) {
+	for (int k = _agents.size() - 1; k >= 0; k--) {
+		if (_agents[k].orderOfEx > _orderOfEx && _agents[k].ID == _id) _agents.erase(_agents.begin() + k);
+	}
+}
+
+
+void Scenario::bagAgentsByOrder(std::vector<Agent>* _agentQueues, std::vector<Agent>*& bag) {
+	// Inserting all agents into the orderOfExecutionQueue
+	delete[] bag;
+	bag = new std::vector<Agent>[agents.size()];
+	for (int a = 0; a < activeID.size(); a++) {
+		for (int k = 0; k < bestAgentQueues[a].size(); k++) {
+			int vectorInd = findVectorIndexWithID(agents, bestAgentQueues[a][k]);
+			bag[vectorInd].push_back(bestAgentQueues[a][k]);
+		}
+	}
+
+	// Sort the orderOfExecutionQueue
+	for (int k = 0; k < agents.size(); k++) {
+		std::sort(bag[k].begin(), bag[k].end(),
+			compareOrderOfEx);
+	}
+}
+
+
+bool Scenario::equalAgentQueue(std::vector<Agent>* qA, std::vector<Agent>* qB) {
+	for (int a = 0; a < activeID.size(); a++) {
+		if (qA[a].size() == qB[a].size()) {
+			for (int k = 0; k < qA[a].size(); k++) {
+				if (qA[a][k].ID != qB[a][k].ID || 
+					qA[a][k].orderOfEx != qB[a][k].orderOfEx ||
+					qA[a][k].delay != qB[a][k].delay) return false;
+			}
+		}
+		else return false;
+	}
+	return true;
+}
+
+
+bool Scenario::missingQueue(std::vector<Agent>* qs) {
+	for (int a = 0; a < activeID.size(); a++) {
+		if (qs[a].size() == 0) return true;
+	}
+	return false;
 }
 
 
@@ -494,8 +582,10 @@ void Scenario::ecld2DType1DynamicNM() {
 	}
 
 	// This stores the agent queue for each matching
+	std::vector<Agent>* prevBestAgentQueues = new std::vector<Agent>[activeID.size()];
 	bestAgentQueues = new std::vector<Agent>[activeID.size()];
 	bestPointQueues = new std::vector<Point2D>[activeID.size()];
+	
 	bestTargets = new DesignatedPoint[activeID.size()];
 
 
@@ -516,16 +606,30 @@ void Scenario::ecld2DType1DynamicNM() {
 	
 	std::vector<PointState> pointsCopy;
 	std::vector<Agent> newAgents, agentsCopy, agentsCopyWithout_k;
+
 	newAgents = agents;
 	
+	/*for (int k = 0; k < agents.size(); k++) {
+		orderOfExecutionQueue[k].push_back(agents[k]);
+	}*/
+
 	// Stopping flag, is true if there is no change
 	bool stop = false;
-	
-	for (int loop = 0; loop < activeID.size(); loop ++) {
+	bool mainLoopStop = false;
+	int loop = 0;
+	while(!mainLoopStop) {
+		std::vector<Agent>* orderOfExecutionQueue;
+		orderOfExecutionQueue = new std::vector<Agent>[agents.size()];
+
 		std::cout << loop << std::endl;
+		loop++;
 
 		stop = false;
+
+		int innerLoop = 0;
 		while (!stop) {
+			std::cout << "Inner loop: " << innerLoop << std::endl;
+			innerLoop++;
 			float* bestTimes = new float[activeID.size()];
 			// This table store 0/1 values, indicating if an agent is used in a matching or not
 			// Used for conflict resolving
@@ -632,11 +736,14 @@ void Scenario::ecld2DType1DynamicNM() {
 			ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[a], pointsCopy);
 			DesignatedPoint bestTarget = findBestTarget(pointsCopy, targetsOfID[a]);
 			bestAgentQueues[a] = pointsCopy[bestTarget.gridRef].agentQueue;
-			
+
 			std::vector<Point2D> pointQueueTmp = pointsCopy[bestTarget.gridRef].pointQueue;
 			pointQueueTmp.push_back(pointsCopy[bestTarget.gridRef].p);
 			std::vector<Agent> agentQueueTmp = bestAgentQueues[a];
 			updateReusedAgent(agentQueueTmp, pointQueueTmp);
+			for (int k = 0; k < bestAgentQueues[a].size(); k++) {
+				bestAgentQueues[a][k].finTime = agentQueueTmp[k].delay;
+			}
 
 			// Update newAgents list
 			// Multiple matchings can share one agent
@@ -644,15 +751,104 @@ void Scenario::ecld2DType1DynamicNM() {
 			for (int k = 0; k < agentQueueTmp.size(); k++) {
 				int vectorIndex = findVectorIndexWithID(tmpAgents, agentQueueTmp[k]);
 				if (tmpAgents[vectorIndex].delay < agentQueueTmp[k].delay) {
+					agentQueueTmp[k].orderOfEx++;
 					tmpAgents[vectorIndex] = agentQueueTmp[k];
 				}
 			}
 		}
+
+		bagAgentsByOrder(bestAgentQueues, orderOfExecutionQueue);
+
+		for (int k = 0; k < tmpAgents.size(); k++) {
+			for (int i = 1; i < orderOfExecutionQueue[k].size(); i++) {
+				// Checking for discrepancy in time between two executions of an agent
+				// This would only happen if:
+				// Agent A is executed for the (i-1)-th time for matching 1, with fin time t1
+				// Agent A is then used for another matching for matching 2, order of execution is i-th, using delay time t1
+				// Matching 1 gets assigned with a new drone, this affects fin time t1, maing it t1'
+				// Now there is a difference between finTime of A at (i-1)-th and delayTime of A at i-th.
+				if (orderOfExecutionQueue[k][i].delay != orderOfExecutionQueue[k][i - 1].finTime) {
+					Agent tmp = orderOfExecutionQueue[k][i-1];
+
+					// Remove all instances of this agent k with orderOfEx i-th onward
+					for (int a = 0; a < activeID.size(); a++) {
+						if (containAgentAfterOrder(bestAgentQueues[a], tmp)) {
+							// Completely clear this queue
+							bestAgentQueues[a].clear();
+						}
+					}
+					break;
+				}
+			}
+		}
+
+		bagAgentsByOrder(bestAgentQueues, orderOfExecutionQueue);
+
+		// Detect a gap in order of execution
+		for (int k = 0; k < tmpAgents.size(); k++) {
+			int gapIndex = -1;
+			for (int i = 0; i < orderOfExecutionQueue[k].size(); i++) {
+				if (orderOfExecutionQueue[k][i].orderOfEx - gapIndex > 1) {
+					break;
+				}
+				gapIndex++;
+			}
+			// Remove all agents in the "best" queue with index > gapIndex
+			for (int a = 0; a < activeID.size(); a++) {
+				removeGapAgents(bestAgentQueues[a], tmpAgents[k].ID, gapIndex);
+			}
+
+			// Put the agent back into tmpAgents as new
+			if (tmpAgents[k].orderOfEx - gapIndex > 1) {
+				if (gapIndex < 0) tmpAgents[k] = agents[k];
+				else tmpAgents[k] = orderOfExecutionQueue[k][gapIndex];
+			}	
+		}
+
+		//for (int a = 0; a < activeID.size(); a++) {
+		//	pointsCopy = points;
+		//	ecld2DType0DynamicNMCommon(bestAgentQueues[a], packagesOfID[a], pointsCopy);
+		//	//DesignatedPoint bestTarget = findBestTarget(pointsCopy, targetsOfID[a]);
+		//	//bestAgentQueues[a] = pointsCopy[bestTarget.gridRef].agentQueue;
+		//	/*std::vector<Point2D> pointQueueTmp = pointsCopy[bestTarget.gridRef].pointQueue;
+		//	pointQueueTmp.push_back(pointsCopy[bestTarget.gridRef].p);
+		//	std::vector<Agent> agentQueueTmp = bestAgentQueues[a];
+		//	updateReusedAgent(agentQueueTmp, pointQueueTmp);*/
+		//}
+
+		for (int a = 0; a < activeID.size(); a++) {
+			if (bestAgentQueues[a].size() == 0) continue;
+			std::cout << "Matching " << a << ": ";
+			for (int k = 0; k < bestAgentQueues[a].size(); k++) {
+				std::cout << bestAgentQueues[a][k].ID << "-" << bestAgentQueues[a][k].orderOfEx << " ";
+			}
+			std::cout << std::endl;
+		}
+
+		if (loop == 1) {
+			for (int a = 0; a < activeID.size(); a++) {
+				prevBestAgentQueues[a] = bestAgentQueues[a];
+			}
+		}
+		else {
+			if (equalAgentQueue(prevBestAgentQueues, bestAgentQueues) &&
+				!missingQueue(prevBestAgentQueues)) {
+				mainLoopStop = true;
+				stop = true;
+				break;
+			}
+			for (int a = 0; a < activeID.size(); a++) {
+				prevBestAgentQueues[a] = bestAgentQueues[a];
+			}
+		}
+
 		newAgents = tmpAgents;
+
+		delete[] orderOfExecutionQueue;
 	}
-	
 
 	// Re-compute the solution with the above assignments
+	std::vector<DesignatedPoint> allTargets;
 	float overallTime = -1;
 	for (int a = 0; a < activeID.size(); a++) {
 		int matchID = activeID[a];
@@ -665,6 +861,9 @@ void Scenario::ecld2DType1DynamicNM() {
 		bestPointQueues[a] = pointsCopy[bestTargets[a].gridRef].pointQueue;
 		// Shouldn't be different
 		bestAgentQueues[a] = pointsCopy[bestTargets[a].gridRef].agentQueue;
+
+		// Debug purpose
+		allTargets.push_back(findBestTarget(pointsCopy, targetsOfID[a]));
 	}
 	std::cout << "Overall time: " << overallTime << std::endl;
 
@@ -863,3 +1062,5 @@ void Scenario::solve() {
 		}
 	}
 }
+
+
