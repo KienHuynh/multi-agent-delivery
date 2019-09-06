@@ -189,8 +189,13 @@ int Canvas::handle(int e) {
 
 
 void Canvas::scenToCanvasCoord(float &x, float &y) {
-	x = (x*canvasWidth / ((float)(scenario.maxX - scenario.minX)))*marginScale + margin + canvasX;
-	y = (canvasHeight - (y*canvasHeight / ((float) (scenario.maxY - scenario.minY))))*marginScale + margin + canvasY;
+	x = (x + abs(scenario.minX))*canvasWidth;
+	x /= ((float)(scenario.maxX - scenario.minX));
+	x = x*marginScale + margin + canvasX;
+	// (canvasHeight - ((y + abs)*canvasHeight / ((float) (scenario.maxY - scenario.minY))))*marginScale + margin + canvasY;
+	y = ((y + abs(scenario.minY))*canvasHeight / ((float)(scenario.maxY - scenario.minY)));
+	y = canvasHeight - y;
+	y = y*marginScale + margin + canvasY;
 }
 
 
