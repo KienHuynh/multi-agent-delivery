@@ -82,6 +82,11 @@ public:
 	Fl_Box * imageBox;
 	static int canvasWidth;
 	static int canvasHeight;
+	static int canvasX;
+	static int canvasY;
+
+	static float marginScale;
+	static int margin;
 
 	// The canvas to render the ink
 	float*** canvas;

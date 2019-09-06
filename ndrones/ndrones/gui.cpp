@@ -2,6 +2,10 @@
 
 int Canvas::canvasWidth = 0;
 int Canvas::canvasHeight = 0;
+int Canvas::canvasX = 0;
+int Canvas::canvasY = 0;
+float Canvas::marginScale = 0;
+int Canvas::margin = 0;
 Scenario Canvas::scenario;
 
 bool GUI::bigRedrawSignal = 0;
@@ -185,15 +189,16 @@ int Canvas::handle(int e) {
 
 
 void Canvas::scenToCanvasCoord(float &x, float &y) {
-	x = x*canvasWidth / ((float)(scenario.maxX - scenario.minX));
-	y = canvasHeight - (y*canvasHeight / ((float) (scenario.maxY - scenario.minY)));
+	x = (x*canvasWidth / ((float)(scenario.maxX - scenario.minX)))*marginScale + margin + canvasX;
+	y = (canvasHeight - (y*canvasHeight / ((float) (scenario.maxY - scenario.minY))))*marginScale + margin + canvasY;
 }
 
 
 void Canvas::canvasToScenCoord(float &x, float &y) {
-	x = x * ((float)(scenario.maxX - scenario.minX)) / canvasWidth;
+	x = ((x - canvasX - margin)/marginScale)*((float)(scenario.maxX - scenario.minX))/((float)canvasWidth);
+	y = y - margin - canvasY;
 	y = canvasHeight - y;
-	y = y * ((float)(scenario.maxY - scenario.minY)) / canvasHeight;
+	y = y * ((float)(scenario.maxY - scenario.minY)) / ((float)canvasHeight);
 }
 
 
@@ -423,7 +428,7 @@ Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Group(X, Y, W
 	canvas = new float**[H];
 
 	// Create a white background
-	imageBox = new Fl_Box(0, 0, W, H, "");
+	imageBox = new Fl_Box(X, Y, W, H, "");
 	imageBox->color(255);
 	color(255);
 
@@ -458,8 +463,12 @@ GUI::GUI(int winWidth, int winHeight) {
 	int menuBarHeight = 25;
 
 	// Init the canvas for drawing / displaying points
-	Canvas::canvasWidth = winHeight - menuBarHeight;
-	Canvas::canvasHeight = winHeight - menuBarHeight;
+	Canvas::canvasWidth = winHeight - menuBarHeight - 50;
+	Canvas::canvasHeight = winHeight - menuBarHeight - 50;
+	Canvas::canvasX = 25;
+	Canvas::canvasY = menuBarHeight + 25;
+	Canvas::marginScale = 0.96;
+	Canvas::margin = 7;
 
 	// Init the width/height unit of the buttons
 	int yButtonUnit = winHeight / 16;
@@ -481,7 +490,7 @@ GUI::GUI(int winWidth, int winHeight) {
 	//randomBu->callback(randomCallback);
 
 	// Create  the actual canvas
-	canvas = new Canvas(0, menuBarHeight, Canvas::canvasWidth, Canvas::canvasHeight, 0);
+	canvas = new Canvas(Canvas::canvasX, Canvas::canvasY, Canvas::canvasWidth, Canvas::canvasHeight, 0);
 
 	win->resizable(win);
 	win->show();
