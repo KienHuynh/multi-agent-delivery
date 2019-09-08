@@ -87,7 +87,8 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 
 void GUI::solverCallback(Fl_Widget*w, void*data) {
 	Canvas::scenario.solve();
-	Canvas::scenario.createAnimation();
+	Canvas::scenario.createDroneAnimation();
+	//Canvas::scenario.createPackageAnimation();
 	Canvas::scenario.aniStart = true;
 	canvas->redraw();
 }
@@ -333,19 +334,19 @@ void Canvas::drawAnimation() {
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	float timeElapsed = ((float)mili / 1000) - scenario.timer;
 	
-	for (int i = 0; i < scenario.anis.size(); i++) {
-		LineAnimation ani = scenario.anis[i];
-		
+	for (int i = 0; i < scenario.droneAnis.size(); i++) {
+		LineAnimation ani = scenario.droneAnis[i];
+
 
 		// TODO: redundant codes
 		// Special treatment for the first loop
-		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.anis[i].active == false) {
-			if (scenario.anis[i].prevTimer < 0) {
-				scenario.anis[i].prevTimer = timeElapsed;
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.droneAnis[i].active == false) {
+			if (scenario.droneAnis[i].prevTimer < 0) {
+				scenario.droneAnis[i].prevTimer = timeElapsed;
 				continue;
 			}
 
-			scenario.anis[i].active = true;
+			scenario.droneAnis[i].active = true;
 			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
 				/ ani.duration) + ani.start;
 			Point2D prevP = ani.start;
@@ -358,9 +359,9 @@ void Canvas::drawAnimation() {
 			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
 		}
 
-		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.anis[i].active == true) {
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.droneAnis[i].active == true) {
 			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
-					/ ani.duration) + ani.start;
+				/ ani.duration) + ani.start;
 			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
 				/ ani.duration) + ani.start;
 			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
@@ -373,7 +374,62 @@ void Canvas::drawAnimation() {
 		}
 		// Last loop
 		if (timeElapsed > ani.endTime && ani.active == true) {
-			scenario.anis[i].active = false;
+			scenario.droneAnis[i].active = false;
+
+			Point2D newP = ani.end;
+			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
+				/ ani.duration) + ani.start;
+			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+			fl_line_style(FL_SOLID, 4);
+			scenToCanvasCoord(newP.x, newP.y);
+			scenToCanvasCoord(prevP.x, prevP.y);
+			newP.y = canvasHeight - newP.y;
+			prevP.y = canvasHeight - prevP.y;
+			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+		}
+	}
+
+	for (int i = 0; i < scenario.packageAnis.size(); i++) {
+		LineAnimation ani = scenario.packageAnis[i];
+
+
+		// TODO: redundant codes
+		// Special treatment for the first loop
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.packageAnis[i].active == false) {
+			if (scenario.packageAnis[i].prevTimer < 0) {
+				scenario.packageAnis[i].prevTimer = timeElapsed;
+				continue;
+			}
+
+			scenario.packageAnis[i].active = true;
+			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+				/ ani.duration) + ani.start;
+			Point2D prevP = ani.start;
+			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+			fl_line_style(FL_SOLID, 4);
+			scenToCanvasCoord(newP.x, newP.y);
+			scenToCanvasCoord(prevP.x, prevP.y);
+			newP.y = canvasHeight - newP.y;
+			prevP.y = canvasHeight - prevP.y;
+			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+		}
+
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.packageAnis[i].active == true) {
+			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+				/ ani.duration) + ani.start;
+			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
+				/ ani.duration) + ani.start;
+			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
+			fl_line_style(FL_SOLID, 4);
+			scenToCanvasCoord(newP.x, newP.y);
+			scenToCanvasCoord(prevP.x, prevP.y);
+			newP.y = canvasHeight - newP.y;
+			prevP.y = canvasHeight - prevP.y;
+			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+		}
+		// Last loop
+		if (timeElapsed > ani.endTime && ani.active == true) {
+			scenario.packageAnis[i].active = false;
 
 			Point2D newP = ani.end;
 			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
