@@ -12,7 +12,7 @@ void Scenario::loadDesignatedPoint(
 		int x, y, id;
 		if (problemType == 0) {
 			myfile >> x >> y;
-			dPoints.push_back(DesignatedPoint(Point2D(x, y)));
+			dPoints.push_back(DesignatedPoint(Point2D(x, y), -1));
 		}
 		else if (problemType == 1) {
 			myfile >> x >> y >> id;
@@ -101,12 +101,12 @@ void Scenario::loadFile(const char* fname) {
 	int targetInputMode = 0;
 
 	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
-	int stepX, stepY;
+	float stepX, stepY;
 	myfile >> minX >> maxX >> stepX >> minY >> maxY >> stepY;
 	// TODO: Make this more efficient
 	// Add points to the data pool
-	for (int i = minX; i < maxX; i += stepX) {
-		for (int j = minY; j < maxY; j += stepY) {
+	for (float i = minX; i < maxX; i += stepX) {
+		for (float j = minY; j < maxY; j += stepY) {
 			points.push_back(PointState(Point2D(i, j)));
 		}
 	}
@@ -242,7 +242,16 @@ void Scenario::ecld2DType0DynamicNMCommon(
 
 
 void Scenario::ecld2DType0DynamicNM() {
+	activeID.push_back(packages[0].ID);
 	ecld2DType0DynamicNMCommon(agents, packages, points);
+	bestAgentQueues = new std::vector<Agent>;
+	bestPointQueues = new std::vector<Point2D>;
+	bestTargets = new DesignatedPoint;
+	bestAgentQueues[0] = points[targets[0].gridRef].agentQueue;
+	bestPointQueues[0] = points[targets[0].gridRef].pointQueue;
+	bestTargets[0] = targets[0];
+	makespan = points[targets[0].gridRef].bestTime;
+	std::cout << makespan << std::endl;
 }
 
 
@@ -885,91 +894,11 @@ LineAnimation::LineAnimation() {
 }
 
 
-void Scenario::createAnimation() {
-	// TODO: Update this to use the new solution variables
-	if (problemType == 0) {
-		int bestTargetID = targets[0].gridRef;
-		float bestTime = points[targets[0].gridRef].bestTime;
-		for (const DesignatedPoint target : targets) {
-			if (bestTime > points[target.gridRef].bestTime) {
-				bestTargetID = target.gridRef;
-				bestTime = points[target.gridRef].bestTime;
-			}
-		}
-
-		std::vector<Agent> agentQ = points[bestTargetID].agentQueue;
-		std::vector<Point2D> pointQ = points[bestTargetID].pointQueue;
-		for (int i = 0; i < agentQ.size(); i++) {
-			int color = 255 * (agentQ[i].v - minSpeed) / (maxSpeed - minSpeed);
-			LineAnimation tmpAni0, tmpAni1;
-			std::vector<LineAnimation> tmpAni;
-			if (i < agentQ.size() - 1) {
-				tmpAni0.setColor(25, 25, color);
-				tmpAni1.setColor(25, 25, color);
-
-				tmpAni0.start = agentQ[i].loc0;
-				tmpAni0.end = pointQ[i];
-				tmpAni0.startTime = 0;
-				tmpAni0.endTime = tmpAni0.startTime +
-					agentQ[i].timing(tmpAni0.start, tmpAni0.end);
-				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
-
-
-				tmpAni1.start = tmpAni0.end;
-				tmpAni1.end = pointQ[i + 1];
-				tmpAni1.startTime = tmpAni0.endTime;
-				tmpAni1.endTime = tmpAni1.startTime +
-					agentQ[i].timing(tmpAni1.start, tmpAni1.end);
-				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-			}
-			// Special treatment for last agent
-			// TODO: trim this down later, redundant code
-			else {
-				tmpAni0.setColor(25, 25, color);
-				tmpAni1.setColor(25, 25, color);
-
-				tmpAni0.start = agentQ[i].loc0;
-				tmpAni0.end = pointQ[i];
-				tmpAni0.startTime = 0;
-				tmpAni0.endTime = tmpAni0.startTime +
-					agentQ[i].timing(tmpAni0.start, tmpAni0.end);
-				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
-
-				tmpAni1.start = tmpAni0.end;
-				tmpAni1.end = points[bestTargetID].p;
-				tmpAni1.startTime = tmpAni0.endTime;
-				tmpAni1.endTime = tmpAni1.startTime +
-					agentQ[i].timing(tmpAni1.start, tmpAni1.end);
-				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-			}
-
-			// These are only specific to this problem only because we know that each agent only generates 2 animations
-			tmpAni1.prevAni.push_back(i * 2);
-			if (i > 0) tmpAni1.prevAni.push_back((i - 1) * 2 + 1);
-			anis.push_back(tmpAni0);
-			anis.push_back(tmpAni1);
-		}
-		// Do another run to add waiting time
-		for (int i = 1; i < anis.size(); i++) {
-			if (anis[i].prevAni.size() == 0) continue;
-			float maxPrevTime = anis[anis[i].prevAni[0]].endTime;
-			
-			for (int j = 1; j < anis[i].prevAni.size(); j++) {
-				if (maxPrevTime < anis[anis[i].prevAni[j]].endTime) maxPrevTime = anis[anis[i].prevAni[j]].endTime;
-			}
-			
-			float diff = maxPrevTime - anis[i].startTime;
-			if (diff < 0) continue;
-			anis[i].startTime += diff;
-			anis[i].endTime += diff;
-		}
-	}
-
-	// TODO: Add initial delay time
-	if (problemType == 1) {
+void Scenario::createDroneAnimation() {
+	if (problemType == 1 || problemType == 0) {
 		for (int a = 0; a < activeID.size(); a++) {
 			int matchID = activeID[a];
-			int aniSize = anis.size();
+			int aniSize = droneAnis.size();
 			float bestTime = points[bestTargets[a].gridRef].bestTime;
 
 			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
@@ -1018,25 +947,94 @@ void Scenario::createAnimation() {
 				// These are only specific to this problem only because we know that each agent only generates 2 animations
 				tmpAni1.prevAni.push_back(i * 2 + aniSize);
 				if (i > 0) tmpAni1.prevAni.push_back((i - 1) * 2 + 1 + aniSize);
-				anis.push_back(tmpAni0);
-				anis.push_back(tmpAni1);
+				droneAnis.push_back(tmpAni0);
+				droneAnis.push_back(tmpAni1);
 			}
 			// Do another run to add waiting time
-			for (int i = 1; i < anis.size(); i++) {
-				if (anis[i].prevAni.size() == 0) continue;
-				float maxPrevTime = anis[anis[i].prevAni[0]].endTime;
+			for (int i = 1; i < droneAnis.size(); i++) {
+				if (droneAnis[i].prevAni.size() == 0) continue;
+				float maxPrevTime = droneAnis[droneAnis[i].prevAni[0]].endTime;
 
-				for (int j = 1; j < anis[i].prevAni.size(); j++) {
-					if (maxPrevTime < anis[anis[i].prevAni[j]].endTime) maxPrevTime = anis[anis[i].prevAni[j]].endTime;
+				for (int j = 1; j < droneAnis[i].prevAni.size(); j++) {
+					if (maxPrevTime < droneAnis[droneAnis[i].prevAni[j]].endTime) maxPrevTime = droneAnis[droneAnis[i].prevAni[j]].endTime;
 				}
 
-				float diff = maxPrevTime - anis[i].startTime;
+				float diff = maxPrevTime - droneAnis[i].startTime;
 				if (diff < 0) continue;
-				anis[i].startTime += diff;
-				anis[i].endTime += diff;
+				droneAnis[i].startTime += diff;
+				droneAnis[i].endTime += diff;
 			}
 		}
-		
+	}
+}
+
+
+void Scenario::createPackageAnimation() {
+	if (problemType == 1 || problemType == 0) {
+		for (int a = 0; a < activeID.size(); a++) {
+			int matchID = activeID[a];
+			int aniSize = packageAnis.size();
+
+			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
+				LineAnimation tmpAni0, tmpAni1;
+				std::vector<LineAnimation> tmpAni;
+				if (i < bestAgentQueues[a].size() - 1) {
+					tmpAni1.setColor(255, 0, 0);
+
+					tmpAni0.start = bestAgentQueues[a][i].loc0;
+					tmpAni0.end = bestPointQueues[a][i];
+					tmpAni0.startTime = bestAgentQueues[a][i].delay;
+					tmpAni0.endTime = tmpAni0.startTime +
+						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
+					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+
+
+					tmpAni1.start = tmpAni0.end;
+					tmpAni1.end = bestPointQueues[a][i + 1];
+					tmpAni1.startTime = tmpAni0.endTime;
+					tmpAni1.endTime = tmpAni1.startTime +
+						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
+					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				}
+				// Special treatment for last agent
+				// TODO: trim this down later, redundant code
+				else {
+					tmpAni1.setColor(255, 0, 0);
+
+					tmpAni0.start = bestAgentQueues[a][i].loc0;
+					tmpAni0.end = bestPointQueues[a][i];
+					tmpAni0.startTime = bestAgentQueues[a][i].delay;
+					tmpAni0.endTime = tmpAni0.startTime +
+						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
+					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+
+					tmpAni1.start = tmpAni0.end;
+					tmpAni1.end = points[bestTargets[a].gridRef].p;
+					tmpAni1.startTime = tmpAni0.endTime;
+					tmpAni1.endTime = tmpAni1.startTime +
+						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
+					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				}
+				// These are only specific to this problem only because we know that each agent only generates 2 animations
+				// tmpAni1.prevAni.push_back(i * 2 + aniSize);
+				if (i > 0) tmpAni1.prevAni.push_back(i - 1 + aniSize);
+				// packageAnis.push_back(tmpAni0);
+				packageAnis.push_back(tmpAni1);
+			}
+			for (int i = 1; i < packageAnis.size(); i++) {
+				if (packageAnis[i].prevAni.size() == 0) continue;
+				float maxPrevTime = packageAnis[packageAnis[i].prevAni[0]].endTime;
+
+				for (int j = 1; j < packageAnis[i].prevAni.size(); j++) {
+					if (maxPrevTime < packageAnis[packageAnis[i].prevAni[j]].endTime) maxPrevTime = packageAnis[packageAnis[i].prevAni[j]].endTime;
+				}
+
+				float diff = maxPrevTime - packageAnis[i].startTime;
+				if (diff < 0) continue;
+				packageAnis[i].startTime += diff;
+				packageAnis[i].endTime += diff;
+			}
+		}
 	}
 }
 
@@ -1044,6 +1042,7 @@ void Scenario::createAnimation() {
 Scenario::Scenario() {
 	timer = 0;
 	aniStart = 0;
+	makespan = 0;
 }
 
 

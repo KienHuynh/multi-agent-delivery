@@ -22,10 +22,12 @@ public:
 	int solverType;
 
 	std::vector<Agent> agents;
-	std::vector<LineAnimation> anis;
+	std::vector<LineAnimation> droneAnis;
+	std::vector<LineAnimation> packageAnis;
 
 	float maxSpeed, minSpeed;
 	int minX, maxX, minY, maxY;
+	float makespan;
 
 	// Animation related members.
 	float timer;
@@ -92,8 +94,10 @@ public:
 	// Approximation of opt.
 	void ecld2DType1DynamicNM();
 
-	// Create an animation based on the solution.
-	void createAnimation();
+	// Create an animation based on the solution for the drones.
+	void createDroneAnimation();
+	// Create an animation for the flight paths of the packages.
+	void createPackageAnimation();
 	void solve();
 
 private:
