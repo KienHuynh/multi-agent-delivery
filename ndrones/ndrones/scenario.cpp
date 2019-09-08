@@ -1,6 +1,16 @@
 #include "scenario.h"
 
 
+std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f) {
+	int num;
+	input >> num;
+	if (num == 0) f = DesignatedPointInputMode::SINGLE;
+	if (num == 1) f = DesignatedPointInputMode::POLY;
+
+	return input;
+}
+
+
 void Scenario::loadDesignatedPoint(
 	std::ifstream &myfile,
 	int problemType,
@@ -46,7 +56,8 @@ void Scenario::loadDesignatedPolygon(
 	int problemType,
 	std::vector<DesignatedPoint> &dPoints,
 	int nDPoint,
-	std::vector<PointState> &points) {
+	std::vector<PointState> &points,
+	std::vector<Point2D> &poly) {
 
 	std::vector<Point2D> vList;
 	for (int i = 0; i < nDPoint; i++) {
@@ -54,6 +65,8 @@ void Scenario::loadDesignatedPolygon(
 		myfile >> x >> y;
 		vList.push_back(Point2D(x, y));
 	}
+
+	poly = vList;
 
 	for (int i = 0; i < vList.size(); i++) {
 		Point2D start = vList[i % nDPoint];
@@ -96,10 +109,6 @@ void Scenario::loadFile(const char* fname) {
 	myfile >> problemType;
 	myfile >> solverType;
 
-	// Specify whether the inputs will be in regional (polygon) format or discrete points format
-	int packageInputMode = 0;
-	int targetInputMode = 0;
-
 	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
 	float stepX, stepY;
 	myfile >> minX >> maxX >> stepX >> minY >> maxY >> stepY;
@@ -113,11 +122,11 @@ void Scenario::loadFile(const char* fname) {
 
 	myfile >> packageInputMode;
 	myfile >> nPackage;
-	if (packageInputMode == 0) {
+	if (packageInputMode == SINGLE) {
 		loadDesignatedPoint(myfile, problemType, packages, nPackage, points);
 	}
-	else if (packageInputMode == 1) {
-		loadDesignatedPolygon(myfile, problemType, packages, nPackage, points);
+	else if (packageInputMode == POLY) {
+		loadDesignatedPolygon(myfile, problemType, packages, nPackage, points, packagePoly);
 	}
 
 	myfile >> targetInputMode;
@@ -126,7 +135,7 @@ void Scenario::loadFile(const char* fname) {
 		loadDesignatedPoint(myfile, problemType, targets, nTarget, points);
 	}
 	else if (targetInputMode == 1) {
-		loadDesignatedPolygon(myfile, problemType, targets, nTarget, points);
+		loadDesignatedPolygon(myfile, problemType, targets, nTarget, points, targetPoly);
 	}
 
 
@@ -247,10 +256,13 @@ void Scenario::ecld2DType0DynamicNM() {
 	bestAgentQueues = new std::vector<Agent>;
 	bestPointQueues = new std::vector<Point2D>;
 	bestTargets = new DesignatedPoint;
-	bestAgentQueues[0] = points[targets[0].gridRef].agentQueue;
-	bestPointQueues[0] = points[targets[0].gridRef].pointQueue;
-	bestTargets[0] = targets[0];
-	makespan = points[targets[0].gridRef].bestTime;
+	
+	DesignatedPoint bestTarget = findBestTarget(points, targets);
+
+	bestAgentQueues[0] = points[bestTarget.gridRef].agentQueue;
+	bestPointQueues[0] = points[bestTarget.gridRef].pointQueue;
+	bestTargets[0] = bestTarget;
+	makespan = points[bestTarget.gridRef].bestTime;
 	std::cout << makespan << std::endl;
 }
 

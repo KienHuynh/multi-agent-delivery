@@ -8,6 +8,11 @@
 
 #include "base.h"
 
+enum DesignatedPointInputMode {
+	SINGLE, POLY
+};
+
+std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f);
 
 // The core class of the project
 // Store the scenario: data points, designated points (packages, targets), agents
@@ -41,6 +46,15 @@ public:
 	std::vector<DesignatedPoint> targets;
 	// Store the list of matching id (s)
 	std::vector<int> activeID;
+
+	// Specify whether the inputs will be in regional (polygon) format or discrete points format
+	DesignatedPointInputMode packageInputMode;
+	DesignatedPointInputMode targetInputMode;
+
+	// Store the package polygon
+	std::vector<Point2D> targetPoly;
+	// Store the target polygon
+	std::vector<Point2D> packagePoly;
 
 	std::string outputFileName;
 
@@ -124,13 +138,15 @@ private:
 	// @param[in] problemType problem type, see inputDescription.txt.
 	// @param[out] dPoints the array of DesignatedPoint to store the package/target locations.
 	// @param[out] nDPoint number of designated points.
-	// @param[in] points the point grid.
+	// @param[out] points the point grid.
+	// @param[out] poly the polygon to be stored for drawing.
 	void loadDesignatedPolygon(
 		std::ifstream &myfile,
 		int problemType,
 		std::vector<DesignatedPoint> &dPoints,
 		int nDPoint,
-		std::vector<PointState> &points);
+		std::vector<PointState> &points,
+		std::vector<Point2D> &poly);
 
 	// There might be multiple targets of the same matching / role (i.e. our agents can deliver one package to any of them
 	// Find the best delivery among all targets
