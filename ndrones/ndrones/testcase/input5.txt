@@ -11,8 +11,9 @@
 88 10 1
 90 80 2
 4
-30 55 6
+4 5 6
 45 17 7
-90 5 15
+50 39 15
 66 67 62
 N packages - N targets problem (3 different matchings)
+5.28608

@@ -1,17 +1,14 @@
-1 1
-0 100 8
-0 100 8
-0 3
-2 1 0
-10 1 1
-40 10 1
-0 2
-8 60 0
-88 10 1
-4
+0 0
+0 100 4
+0 100 4
+0 1
+8 40
+0 1
+80 65
+5
+10 20 5
 30 55 6
 45 36 7
 45 57 7.5
-66 67 16
-N packages - N targets problem
-In this case, both matching use only d4 in their optimal solutions
+66 67 9
+Best time: 13.1487
