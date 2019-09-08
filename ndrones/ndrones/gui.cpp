@@ -277,40 +277,90 @@ void Canvas::drawAgents() {
 
 
 void Canvas::drawPackages() {
-	for (int i = 0; i < scenario.packages.size(); i++) {
-		float x = scenario.packages[i].loc.x;
-		float y = scenario.packages[i].loc.y;
-		scenToCanvasCoord(x, y);
-		fl_color(200, 25, 25);
-		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
-		
-		// Draw package ID
-		fl_color(0, 0, 0);
-		if (scenario.packages[i].ID >= 0) {
-			char s[80];
-			sprintf_s(s, "%d", scenario.packages[i].ID);
-			fl_font(FL_HELVETICA, 18);
-			fl_draw(s, x + 5, y + 5);
+	if (scenario.packageInputMode == SINGLE) {
+		for (int i = 0; i < scenario.packages.size(); i++) {
+			float x = scenario.packages[i].loc.x;
+			float y = scenario.packages[i].loc.y;
+			scenToCanvasCoord(x, y);
+			fl_color(200, 25, 25);
+			fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+
+			// Draw package ID
+			fl_color(0, 0, 0);
+			if (scenario.packages[i].ID >= 0) {
+				char s[80];
+				sprintf_s(s, "%d", scenario.packages[i].ID);
+				fl_font(FL_HELVETICA, 18);
+				fl_draw(s, x + 5, y + 5);
+			}
+		}
+	}
+	
+	if (scenario.packageInputMode == POLY) {
+		int n = scenario.packages.size();
+		for (int i = 0; i < n; i++) {
+			float x0 = scenario.packages[i].loc.x;
+			float y0 = scenario.packages[i].loc.y;
+			float x1 = scenario.packages[(i + 1) % n].loc.x;
+			float y1 = scenario.packages[(i + 1) % n].loc.y;
+			scenToCanvasCoord(x0, y0);
+			scenToCanvasCoord(x1, y1);
+			fl_color(200, 25, 25);
+			fl_normal_line(x0, canvasHeight - y0, x1, canvasHeight - y1);
+
+			// Draw target ID
+			fl_color(0, 0, 0);
+			if (scenario.packages[i].ID >= 0 && i == 0) {
+				char s[80];
+				sprintf_s(s, "%d", scenario.packages[i].ID);
+				fl_font(FL_HELVETICA, 18);
+				fl_draw(s, x0 + 5, y0 + 5);
+			}
 		}
 	}
 }
 
 
 void Canvas::drawTargets() {
-	for (int i = 0; i < scenario.targets.size(); i++) {
-		float x = scenario.targets[i].loc.x;
-		float y = scenario.targets[i].loc.y;
-		scenToCanvasCoord(x, y);
-		fl_color(25, 200, 25);
-		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+	if (scenario.targetInputMode == SINGLE) {
+		for (int i = 0; i < scenario.targets.size(); i++) {
+			float x = scenario.targets[i].loc.x;
+			float y = scenario.targets[i].loc.y;
+			scenToCanvasCoord(x, y);
+			fl_color(25, 200, 25);
+			fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 
-		// Draw target ID
-		fl_color(0, 0, 0);
-		if (scenario.targets[i].ID >= 0) {
-			char s[80];
-			sprintf_s(s, "%d", scenario.targets[i].ID);
-			fl_font(FL_HELVETICA, 18);
-			fl_draw(s, x + 5, y + 5);
+			// Draw target ID
+			fl_color(0, 0, 0);
+			if (scenario.targets[i].ID >= 0) {
+				char s[80];
+				sprintf_s(s, "%d", scenario.targets[i].ID);
+				fl_font(FL_HELVETICA, 18);
+				fl_draw(s, x + 5, y + 5);
+			}
+		}
+	}
+
+	if (scenario.targetInputMode == POLY) {
+		int n = scenario.targets.size();
+		for (int i = 0; i < n; i++) {
+			float x0 = scenario.targets[i].loc.x;
+			float y0 = scenario.targets[i].loc.y;
+			float x1 = scenario.targets[(i + 1) % n].loc.x;
+			float y1 = scenario.targets[(i + 1) % n].loc.y;
+			scenToCanvasCoord(x0, y0);
+			scenToCanvasCoord(x1, y1);
+			fl_color(25, 200, 25);
+			fl_normal_line(x0, canvasHeight - y0, x1, canvasHeight - y1);
+
+			// Draw target ID
+			fl_color(0, 0, 0);
+			if (scenario.targets[i].ID >= 0 && i == 0) {
+				char s[80];
+				sprintf_s(s, "%d", scenario.targets[i].ID);
+				fl_font(FL_HELVETICA, 18);
+				fl_draw(s, x0 + 5, y0 + 5);
+			}
 		}
 	}
 }
