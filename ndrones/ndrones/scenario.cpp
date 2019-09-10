@@ -114,6 +114,10 @@ void Scenario::loadFile(const char* fname) {
 	myfile >> minX >> maxX >> stepX >> minY >> maxY >> stepY;
 	// TODO: Make this more efficient
 	// Add points to the data pool
+
+	if (cfg::stepX > 0) stepX = cfg::stepX;
+	if (cfg::stepY > 0) stepY = cfg::stepY;
+
 	for (float i = minX; i < maxX; i += stepX) {
 		for (float j = minY; j < maxY; j += stepY) {
 			points.push_back(PointState(Point2D(i, j)));
@@ -165,17 +169,29 @@ void Scenario::loadFile(const char* fname) {
 }
 
 
-//void Scenario::writeSolution() {
-//	std::ofstream myfile;
-//	myfile.open("output\\" + outputFileName + ".txt");
-//	for (int a = 0; a < activeID.size(); a++) {
-//		myfile << a << " " << bestAgentQueues[a].size() << std::endl;
-//		for (int k = 0; k < bestAgentQueues[a].size(); k++) {
-//			//myfile << bestAgentQueues[a]. << " " << bestAgentQueues[a].size() << std::endl;
-//		}
-//	}
-//	myfile.close();
-//}
+void Scenario::writeSolution(const char *outputFile) {
+	std::ofstream myfile;
+	myfile.open(outputFile);
+
+	myfile << overallTime << std::endl;
+	for (int a = 0; a < activeID.size(); a++) {
+		int pairID = activeID[a];
+		myfile << pairID << " " << bestTimes[a] << std::endl;
+		myfile << bestAgentQueues[a].size() << std::endl;
+		for (int k = 0; k < bestAgentQueues[a].size(); k++) {
+			std::cout << "";
+			myfile << bestAgentQueues[a][k].loc0.x << " " << bestAgentQueues[a][k].loc0.y << " " <<
+				bestAgentQueues[a][k].v << std::endl;
+		}
+		myfile << (bestPointQueues[a].size() + 1) << std::endl;
+		for (int p = 0; p < bestPointQueues[a].size(); p++) {
+			myfile << bestPointQueues[a][p].x << " " << bestPointQueues[a][p].y << std::endl;
+		}
+		myfile << bestTargets[a].loc.x << " " << bestTargets[a].loc.y << std::endl;
+	}
+
+	myfile.close();
+}
 
 
 float max(float x, float y) {
@@ -221,6 +237,7 @@ void Scenario::ecld2DType0DynamicNMCommon(
 	}
 
 	for (int k = 1; k < _agents.size(); k++) {
+		std::cout << k << std::endl;
 		std::vector<PointState> pointsCopy = _points;
 		for (int i = 0; i < _points.size(); i++) {
 			if (isPackage(i, _packages)) continue;
@@ -256,12 +273,16 @@ void Scenario::ecld2DType0DynamicNM() {
 	bestAgentQueues = new std::vector<Agent>;
 	bestPointQueues = new std::vector<Point2D>;
 	bestTargets = new DesignatedPoint;
+	bestTimes = new float;
 	
 	DesignatedPoint bestTarget = findBestTarget(points, targets);
 
 	bestAgentQueues[0] = points[bestTarget.gridRef].agentQueue;
 	bestPointQueues[0] = points[bestTarget.gridRef].pointQueue;
 	bestTargets[0] = bestTarget;
+	bestTimes[0] = points[bestTarget.gridRef].bestTime;
+	overallTime = bestTimes[0];
+
 	makespan = points[bestTarget.gridRef].bestTime;
 	std::cout << makespan << std::endl;
 }
@@ -608,7 +629,7 @@ void Scenario::ecld2DType1DynamicNM() {
 	bestPointQueues = new std::vector<Point2D>[activeID.size()];
 	
 	bestTargets = new DesignatedPoint[activeID.size()];
-
+	bestTimes = new float[activeID.size()];
 
 	float* prevBestTimes = new float[activeID.size()];
 	for (int i = 0; i < activeID.size(); i++) {
@@ -826,17 +847,6 @@ void Scenario::ecld2DType1DynamicNM() {
 			}	
 		}
 
-		//for (int a = 0; a < activeID.size(); a++) {
-		//	pointsCopy = points;
-		//	ecld2DType0DynamicNMCommon(bestAgentQueues[a], packagesOfID[a], pointsCopy);
-		//	//DesignatedPoint bestTarget = findBestTarget(pointsCopy, targetsOfID[a]);
-		//	//bestAgentQueues[a] = pointsCopy[bestTarget.gridRef].agentQueue;
-		//	/*std::vector<Point2D> pointQueueTmp = pointsCopy[bestTarget.gridRef].pointQueue;
-		//	pointQueueTmp.push_back(pointsCopy[bestTarget.gridRef].p);
-		//	std::vector<Agent> agentQueueTmp = bestAgentQueues[a];
-		//	updateReusedAgent(agentQueueTmp, pointQueueTmp);*/
-		//}
-
 		for (int a = 0; a < activeID.size(); a++) {
 			if (bestAgentQueues[a].size() == 0) continue;
 			std::cout << "Matching " << a << ": ";
@@ -870,15 +880,15 @@ void Scenario::ecld2DType1DynamicNM() {
 
 	// Re-compute the solution with the above assignments
 	std::vector<DesignatedPoint> allTargets;
-	float overallTime = -1;
+	overallTime = -1;
 	for (int a = 0; a < activeID.size(); a++) {
 		int matchID = activeID[a];
 		pointsCopy = points;
 
 		ecld2DType0DynamicNMCommon(bestAgentQueues[a], packagesOfID[a], pointsCopy);
 		bestTargets[a] = findBestTarget(pointsCopy, targetsOfID[a]);
-		float bestTime = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
-		if (overallTime == -1 || overallTime < bestTime) overallTime = bestTime;
+		bestTimes[a] = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
+		if (overallTime == -1 || overallTime < bestTimes[a]) overallTime = bestTimes[a];
 		bestPointQueues[a] = pointsCopy[bestTargets[a].gridRef].pointQueue;
 		// Shouldn't be different
 		bestAgentQueues[a] = pointsCopy[bestTargets[a].gridRef].agentQueue;

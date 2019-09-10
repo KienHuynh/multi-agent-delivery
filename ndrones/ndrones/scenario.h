@@ -62,11 +62,16 @@ public:
 	std::vector<Agent>* bestAgentQueues;
 	std::vector<Point2D>* bestPointQueues;
 	DesignatedPoint* bestTargets;
+	float* bestTimes;
+	float overallTime;
 
 	Scenario();
 
 	// Load scenario from file.
 	void loadFile(const char*);
+
+	// Write solution to a file
+	void writeSolution(const char* outputFile);
 
 	// Check if a point is one of the packages
 	// TODO: use better data structure?
@@ -225,7 +230,4 @@ private:
 
 	// Check if there is an empty queue here
 	bool missingQueue(std::vector<Agent>* qs);
-
-	// Write solution to a file
-	void writeSolution();
 };
