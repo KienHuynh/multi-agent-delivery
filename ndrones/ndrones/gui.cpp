@@ -85,7 +85,7 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 }
 
 
-void GUI::solverCallback(Fl_Widget*w, void*data) {
+void GUI::solverCallback(Fl_Widget *w, void *data) {
 	Canvas::scenario.solve();
 	Canvas::scenario.createDroneAnimation();
 	//Canvas::scenario.createPackageAnimation();
@@ -94,11 +94,16 @@ void GUI::solverCallback(Fl_Widget*w, void*data) {
 }
 
 
-void GUI::drawSignalCallback(Fl_Widget*w, void*data) {
+void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 	drawSignal = true;
 	auto now = std::chrono::system_clock::now().time_since_epoch();
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	Canvas::scenario.timer = ((float)mili) / 1000;
+}
+
+
+void GUI::runScriptCallback(Fl_Widget *w, void *data) {
+
 }
 
 
@@ -595,10 +600,8 @@ GUI::GUI(int winWidth, int winHeight) {
 	runAllBu->callback(solverCallback);
 	drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, 25, "Animate");
 	drawBu->callback(drawSignalCallback);
-	
-	//clearBu->callback(cloudClearCallback);
-	//randomBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 4, 160, 25, "Random");
-	//randomBu->callback(randomCallback);
+	//drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 3, 160, 25, "Run script");
+	//drawBu->callback(runScriptCallback);
 
 	// Create  the actual canvas
 	canvas = new Canvas(Canvas::canvasX, Canvas::canvasY, Canvas::canvasWidth, Canvas::canvasHeight, 0);
@@ -610,11 +613,8 @@ GUI::GUI(int winWidth, int winHeight) {
 
 GUI::~GUI() {
 	delete canvas;
-	delete win;
-	delete exitBu;
-	delete runStepBu;
 	delete runAllBu;
-	delete randomBu;
 	delete clearBu;
 	delete menuBar;
+	delete win;
 }

@@ -111,11 +111,9 @@ public:
 	static Canvas *canvas;
 
 	// Buttons
-	Fl_Button *exitBu;
-	Fl_Button *runStepBu;
 	Fl_Button *runAllBu;
-	Fl_Button *randomBu;
 	Fl_Button *drawBu;
+	Fl_Button *scriptBu;
 	Fl_Button *clearBu;
 	Fl_Menu_Bar *menuBar;
 
@@ -141,6 +139,8 @@ public:
 	static void solverCallback(Fl_Widget*w, void*data);
 	// Callback to set draw signal = true
 	static void drawSignalCallback(Fl_Widget*w, void*data);
+	// Callback to run a script
+	static void runScriptCallback(Fl_Widget*w, void*data);
 };
 
 #endif
