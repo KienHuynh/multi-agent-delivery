@@ -14,9 +14,9 @@ import numpy as np
 
 # Read YAML file
 # Read YAML file
-sample_rate = 25
+sample_step = 80000
 max_data_range = 1000000
-for i in range(21, 100):
+for i in range(0, 100):
     #pdb.set_trace()
     try:
         file_path = "pho_experiment_1_exsize_100/data_exsize_100_repnum_%d/data_exsize_100_repnum_%d.yml" % (i, i)
@@ -32,7 +32,7 @@ for i in range(21, 100):
     target = data['target'] 
     odw_straight = data['odw_straight']
     odw_cvx = data['odw_cvx']
-    
+    pdb.set_trace()
     write_path = 'pho_experiment_1_exsize_100_myformat/data_exsize_100_repnum_%d/' % (i)
     file_name = 'data_exsize_100_repnum_%d.txt' % (i)
     if (not os.path.isdir(write_path)):
@@ -50,8 +50,8 @@ for i in range(21, 100):
     
     with open(write_path + file_name, 'w') as f:
         f.write('0 0\n')
-        f.write('%d %d %d\n' % (min_x, max_x, max_data_range/sample_rate))
-        f.write('%d %d %d\n' % (min_y, max_y, max_data_range/sample_rate))
+        f.write('%d %d %f\n' % (min_x, max_x, sample_step))
+        f.write('%d %d %f\n' % (min_y, max_y, sample_step))
         f.write('0 1\n')
         f.write('%d %d\n' % (int(package[0] * max_data_range), int(package[1] * max_data_range)))
         f.write('0 1\n')
