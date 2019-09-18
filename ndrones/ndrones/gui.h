@@ -53,6 +53,8 @@ protected:
 	// Draw the agents
 	void drawAgents();
 
+	void drawLineAnis(std::vector<LineAnimation> &anis, float timeElapsed);
+
 	// Draw animations in the scenario
 	void drawAnimation();
 

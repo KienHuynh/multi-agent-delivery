@@ -382,58 +382,46 @@ void Canvas::drawDiscretePoints() {
 }
 
 
-// TODO: Should be in a separate animation class
-void Canvas::drawAnimation() {
-	if (!scenario.aniStart || !GUI::drawSignal) return;
-	auto now = std::chrono::system_clock::now().time_since_epoch();
-	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-	float timeElapsed = ((float)mili / 1000) - scenario.timer;
-	
-	for (int i = 0; i < scenario.droneAnis.size(); i++) {
-		LineAnimation ani = scenario.droneAnis[i];
+void Canvas::drawLineAnis(std::vector<LineAnimation> &anis, float timeElapsed) {
+	for (int i = 0; i < anis.size(); i++) {
+		LineAnimation ani = anis[i];
 
-
-		// TODO: redundant codes
 		// Special treatment for the first loop
-		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.droneAnis[i].active == false) {
-			if (scenario.droneAnis[i].prevTimer < 0) {
-				scenario.droneAnis[i].prevTimer = timeElapsed;
+		Point2D newP;
+		Point2D prevP;
+		bool draw = false;
+		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && anis[i].active == false) {
+			if (anis[i].prevTimer < 0) {
+				anis[i].prevTimer = timeElapsed;
 				continue;
 			}
 
-			scenario.droneAnis[i].active = true;
-			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+			anis[i].active = true;
+			newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
 				/ ani.duration) + ani.start;
-			Point2D prevP = ani.start;
-			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
-			fl_line_style(FL_SOLID, 4);
-			scenToCanvasCoord(newP.x, newP.y);
-			scenToCanvasCoord(prevP.x, prevP.y);
-			newP.y = canvasHeight - newP.y;
-			prevP.y = canvasHeight - prevP.y;
-			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+			prevP = ani.start;
+			draw = true;
 		}
 
-		if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && scenario.droneAnis[i].active == true) {
-			Point2D newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
+		else if (timeElapsed >= ani.startTime && timeElapsed <= ani.endTime && anis[i].active == true) {
+			newP = ((ani.end - ani.start) * (timeElapsed - ani.startTime)
 				/ ani.duration) + ani.start;
-			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
+			prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
 				/ ani.duration) + ani.start;
-			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
-			fl_line_style(FL_SOLID, 4);
-			scenToCanvasCoord(newP.x, newP.y);
-			scenToCanvasCoord(prevP.x, prevP.y);
-			newP.y = canvasHeight - newP.y;
-			prevP.y = canvasHeight - prevP.y;
-			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+			draw = true;
 		}
+
 		// Last loop
 		if (timeElapsed > ani.endTime && ani.active == true) {
-			scenario.droneAnis[i].active = false;
+			anis[i].active = false;
 
-			Point2D newP = ani.end;
-			Point2D prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
+			newP = ani.end;
+			prevP = ((ani.end - ani.start) * (ani.prevTimer - ani.startTime)
 				/ ani.duration) + ani.start;
+			draw = true;
+		}
+
+		if (draw) {
 			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
 			fl_line_style(FL_SOLID, 4);
 			scenToCanvasCoord(newP.x, newP.y);
@@ -443,6 +431,17 @@ void Canvas::drawAnimation() {
 			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
 		}
 	}
+}
+
+
+// TODO: Should be in a separate animation class
+void Canvas::drawAnimation() {
+	if (!scenario.aniStart || !GUI::drawSignal) return;
+	auto now = std::chrono::system_clock::now().time_since_epoch();
+	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+	float timeElapsed = ((float)mili / 1000) - scenario.timer;
+	
+	drawLineAnis(scenario.droneAnis, timeElapsed);
 
 	for (int i = 0; i < scenario.packageAnis.size(); i++) {
 		LineAnimation ani = scenario.packageAnis[i];
@@ -512,12 +511,10 @@ void Canvas::draw() {
 
 	if (GUI::bigRedrawSignal) {
 		// Not sure how do you clear drawn objects in FLTK so I just draw a white rectangle instead
-		// TODO: find out how to properly clear things
 		fl_color(255);
 		fl_rectf(0, 0, Canvas::canvasWidth, Canvas::canvasHeight);
 		GUI::bigRedrawSignal = 0;
 	}
-
 
 	// Let group draw itself
 	Fl_Group::draw();
@@ -527,16 +524,10 @@ void Canvas::draw() {
 		fl_font(FL_COURIER, 80);
 	}
 
-
-	//drawAxes();
-	//drawGridLines();
-	//drawDiscretePoints();
-	//drawCoords();
 	drawAgents();
 	drawPackages();
 	drawTargets();
 	drawAnimation();
-
 }
 
 
@@ -548,7 +539,6 @@ Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Group(X, Y, W
 	imageBox->color(255);
 	color(255);
 
-	// TODO: Create the x / y axis
 	axisLength = ((W < H ? W : H)) * 0.9;
 	origin = ((W < H ? W : H)) * 0.05;
 	squareLength = ((W < H ? W : H)) * 0.8;
