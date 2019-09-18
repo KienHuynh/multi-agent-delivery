@@ -10,3 +10,12 @@ Dependencies:
 
 * FLTK 1.3.5
 * cxxopts
+
+To run the program in the command line:
+```
+ndrones.exe -g [0|1] -i [input_path] -o [output_path]
+
+# -g: turning on GUI
+# input_path: full or relative path to input file
+# output_path: full or relative path to output file you want to write
+```
