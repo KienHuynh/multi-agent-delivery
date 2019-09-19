@@ -87,8 +87,6 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 
 void GUI::solverCallback(Fl_Widget *w, void *data) {
 	Canvas::scenario.solve();
-	Canvas::scenario.createDroneAnimation();
-	//Canvas::scenario.createPackageAnimation();
 	Canvas::scenario.aniStart = true;
 	canvas->redraw();
 }
@@ -96,6 +94,8 @@ void GUI::solverCallback(Fl_Widget *w, void *data) {
 
 void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 	drawSignal = true;
+	if (canvas->aniMode == DRONEANI) Canvas::scenario.createDroneAnimation();
+	if (canvas->aniMode == PACKAGEANI) Canvas::scenario.createPackageAnimation();
 	auto now = std::chrono::system_clock::now().time_since_epoch();
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	Canvas::scenario.timer = ((float)mili) / 1000;
@@ -104,6 +104,18 @@ void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 
 void GUI::runScriptCallback(Fl_Widget *w, void *data) {
 
+}
+
+
+void GUI::aniRadioCallback(Fl_Widget*w, void*data) {
+	canvas->aniMode = (AnimationMode) (int) data;
+}
+
+
+void Canvas::timerCallback(void *userData) {
+	Canvas *o = (Canvas*)userData;
+	o->redraw();
+	Fl::repeat_timeout(0.001, timerCallback, userData);
 }
 
 
@@ -441,9 +453,8 @@ void Canvas::drawAnimation() {
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	float timeElapsed = ((float)mili / 1000) - scenario.timer;
 	
-	drawLineAnis(scenario.droneAnis, timeElapsed);
-	drawLineAnis(scenario.packageAnis, timeElapsed);
-
+	if (aniMode == DRONEANI) drawLineAnis(scenario.droneAnis, timeElapsed);
+	if (aniMode == PACKAGEANI) drawLineAnis(scenario.packageAnis, timeElapsed);
 }
 
 
@@ -489,13 +500,8 @@ Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Group(X, Y, W
 	squareLength = ((W < H ? W : H)) * 0.8;
 
 	Fl::add_timeout(0.001, timerCallback, (void*)this);
-}
 
-
-void Canvas::timerCallback(void *userData) {
-	Canvas *o = (Canvas*)userData;
-	o->redraw();
-	Fl::repeat_timeout(0.001, timerCallback, userData);
+	aniMode = DRONEANI;
 }
 
 
@@ -531,10 +537,28 @@ GUI::GUI(int winWidth, int winHeight) {
 	menu->add("File/Save", FL_CTRL + 's', saveResultCallback);
 
 	// Assign callbacks to corresponding buttons
-	runAllBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit, 160, 25, "Run");
+	runAllBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit, 160, 25, "Solve");
 	runAllBu->callback(solverCallback);
+	
 	drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, 25, "Animate");
 	drawBu->callback(drawSignalCallback);
+	
+	// Group of radio buttons which allow user to choose animation mode
+	Fl_Group* rb_group = new Fl_Group(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2.8, 180, 50); 
+	rb_group->box(FL_UP_FRAME);
+	
+	droneAniBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 3, 10, 10, "Animate drones path");
+	droneAniBu->type(102);
+	droneAniBu->down_box(FL_ROUND_DOWN_BOX);
+	droneAniBu->callback(aniRadioCallback, (void*)DRONEANI);
+	
+	packageAniBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 3.5, 10, 10, "Animate package path");
+	packageAniBu->type(102);
+	packageAniBu->down_box(FL_ROUND_DOWN_BOX);
+	packageAniBu->callback(aniRadioCallback, (void*)PACKAGEANI);
+
+	rb_group->end();
+
 	//drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 3, 160, 25, "Run script");
 	//drawBu->callback(runScriptCallback);
 

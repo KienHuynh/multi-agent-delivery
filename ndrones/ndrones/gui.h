@@ -15,6 +15,7 @@
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Round_Button.H>
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_File_Chooser.H>
@@ -30,6 +31,9 @@ static Fl_Input        *G_inptitle = NULL;
 static Fl_Input        *G_inpfilter = NULL;
 static Fl_Input        *G_inpdirname = NULL;
 static Fl_File_Chooser *G_chooser = NULL;
+
+
+enum AnimationMode{DRONEANI, PACKAGEANI};
 
 
 // The main class that display images and drawings
@@ -102,6 +106,9 @@ public:
 	static Scenario scenario;
 	static float timer;
 
+	// Animation
+	AnimationMode aniMode;
+
 	Canvas(int X, int Y, int W, int H, const char *L);
 	~Canvas();
 	int mouseX, mouseY;
@@ -118,6 +125,8 @@ public:
 	Fl_Button *scriptBu;
 	Fl_Button *clearBu;
 	Fl_Menu_Bar *menuBar;
+	Fl_Round_Button *droneAniBu;
+	Fl_Round_Button *packageAniBu;
 
 	Fl_Window *win;
 
@@ -143,6 +152,8 @@ public:
 	static void drawSignalCallback(Fl_Widget*w, void*data);
 	// Callback to run a script
 	static void runScriptCallback(Fl_Widget*w, void*data);
+	// Callback to set animation mode
+	static void aniRadioCallback(Fl_Widget*w, void*data);
 };
 
 #endif
