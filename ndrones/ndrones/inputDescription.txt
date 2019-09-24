@@ -1,11 +1,13 @@
-problem_type solver_type // Problem info
+problem_type // Problem info, refer to ProblemType enum for more info
 start_x end_x sampling_step // Sampling
 start_y end_y sampling_step
-input_point_type num_point // Package (s) info
+input_point_type // SINGLE_POINT or POLY
+num_point // Package (s) info
 x1 y1 id1
 x2 y2 id2
 ... // num_point
-input_point_type num_point // Target (s) info
+input_point_type // SINGLE_POINT or POLY
+num_point // Target (s) info
 x1 y1 id1
 x2 y2 id2
 ... // num_point
