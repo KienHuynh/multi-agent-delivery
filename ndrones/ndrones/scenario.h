@@ -16,6 +16,7 @@ enum DesignatedPointInputMode {
 // TODO: consider the following case
 // There are multiple targets and IDs, some of the targets might have shared IDs. 
 // We must deliver the package (does not matter where they come from) to EACH of these target.
+// Currently, if there are 2 targets of ID 1, as long as the package is delivered to one of them, it's fine.
 enum ProblemType {
 	UNKNOWN = 0,
 	ONEDIM = 1,
@@ -26,7 +27,8 @@ enum ProblemType {
 	// CONTINUOUS: 5th bit = 0
 	SINGLE_TARGET = 32,
 	//MULTI_TARGET: 6th bit = 0
-	SINGLE_ID = 64
+	SINGLE_ID = 64 // This means that there is one ID (-1) among all sources and targets
+	// MULTI_ID: 7th bit = 0
 };
 
 
@@ -40,12 +42,7 @@ std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f);
 // Include the solvers to the problems and creation of animations
 class Scenario {
 public:
-	// TODO: use bit flag
-	// n drones deliver 1 package from point (s) to point (s)
-	// n drones deliver m packages from point (s) to point (s), all designated points have the same roles
-	// n drones deliver m packages from point (s) to point (s), each point is unique
 	ProblemType problemType;
-	int solverType;
 
 	std::vector<Agent> agents;
 	std::vector<LineAnimation> droneAnis;
