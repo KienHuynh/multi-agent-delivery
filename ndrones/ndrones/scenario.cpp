@@ -124,15 +124,16 @@ void Scenario::loadFile(const char* fname) {
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
 
+	// Reading problem type
+	problemType = UNKNOWN;
+	std::string str;
+	getline(myfile, str);
+	std::istringstream ss(str);
+
 	ProblemType tmp;
-	myfile >> tmp;
-	problemType = tmp;
-	myfile >> tmp;
-	problemType = (ProblemType) (problemType | tmp);
-	myfile >> tmp;
-	problemType = (ProblemType)(problemType | tmp);
-	myfile >> tmp;
-	problemType = (ProblemType)(problemType | tmp);
+	while (ss >> tmp) {
+		problemType = (ProblemType)(problemType | tmp);
+	}
 
 	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
 	float stepX, stepY;
