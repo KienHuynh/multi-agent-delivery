@@ -9,8 +9,29 @@
 #include "base.h"
 
 enum DesignatedPointInputMode {
-	SINGLE, POLY
+	SINGLE_POINT, POLY
 };
+
+
+// TODO: consider the following case
+// There are multiple targets and IDs, some of the targets might have shared IDs. 
+// We must deliver the package (does not matter where they come from) to EACH of these target.
+enum ProblemType {
+	UNKNOWN = 0,
+	ONEDIM = 1,
+	TWODIM = 2,
+	EUCLID = 4,
+	GRAPH = 8,
+	DISCRETE = 16,
+	// CONTINUOUS: 5th bit = 0
+	SINGLE_TARGET = 32,
+	//MULTI_TARGET: 6th bit = 0
+	SINGLE_ID = 64
+};
+
+
+std::istream& operator >> (std::istream &input, ProblemType& p);
+
 
 std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f);
 
@@ -23,7 +44,7 @@ public:
 	// n drones deliver 1 package from point (s) to point (s)
 	// n drones deliver m packages from point (s) to point (s), all designated points have the same roles
 	// n drones deliver m packages from point (s) to point (s), each point is unique
-	int problemType;
+	ProblemType problemType;
 	int solverType;
 
 	std::vector<Agent> agents;
@@ -131,7 +152,7 @@ private:
 	// @param[in] points the point grid.
 	void loadDesignatedPoint(
 		std::ifstream &myfile,
-		int problemType,
+		ProblemType problemType,
 		std::vector<DesignatedPoint> &dPoints,
 		int nDPoint,
 		std::vector<PointState> &points);
@@ -147,7 +168,7 @@ private:
 	// @param[out] poly the polygon to be stored for drawing.
 	void loadDesignatedPolygon(
 		std::ifstream &myfile,
-		int problemType,
+		ProblemType problemType,
 		std::vector<DesignatedPoint> &dPoints,
 		int nDPoint,
 		std::vector<PointState> &points,

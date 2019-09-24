@@ -4,8 +4,23 @@
 std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f) {
 	int num;
 	input >> num;
-	if (num == 0) f = DesignatedPointInputMode::SINGLE;
+	if (num == 0) f = DesignatedPointInputMode::SINGLE_POINT;
 	if (num == 1) f = DesignatedPointInputMode::POLY;
+
+	return input;
+}
+
+
+std::istream& operator >> (std::istream &input, ProblemType& p) {
+	std::string tmp;
+	input >> tmp;
+	if (stringEqual(tmp, "onedim")) p = ONEDIM;
+	if (stringEqual(tmp, "twodim")) p = TWODIM;
+	if (stringEqual(tmp, "euclid"))	p = EUCLID;
+	if (stringEqual(tmp, "graph")) p = GRAPH;
+	if (stringEqual(tmp, "discrete")) p = DISCRETE;
+	if (stringEqual(tmp, "single_target")) p = SINGLE_TARGET;
+	if (stringEqual(tmp, "single_id")) p = SINGLE_ID;
 
 	return input;
 }
@@ -13,18 +28,18 @@ std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f) {
 
 void Scenario::loadDesignatedPoint(
 	std::ifstream &myfile,
-	int problemType,
+	ProblemType problemType,
 	std::vector<DesignatedPoint> &dPoints,
 	int nDPoint,
 	std::vector<PointState> &points) {
 
 	for (int i = 0; i < nDPoint; i++) {
 		int x, y, id;
-		if (problemType == 0) {
+		if ((problemType & SINGLE_ID) != 0) {
 			myfile >> x >> y;
 			dPoints.push_back(DesignatedPoint(Point2D(x, y), -1));
 		}
-		else if (problemType == 1) {
+		else if ((problemType & SINGLE_ID) == 0) {
 			myfile >> x >> y >> id;
 			dPoints.push_back(DesignatedPoint(Point2D(x, y), id));
 		}
@@ -53,7 +68,7 @@ void Scenario::loadDesignatedPoint(
 
 void Scenario::loadDesignatedPolygon(
 	std::ifstream &myfile,
-	int problemType,
+	ProblemType problemType,
 	std::vector<DesignatedPoint> &dPoints,
 	int nDPoint,
 	std::vector<PointState> &points,
@@ -106,8 +121,15 @@ void Scenario::loadFile(const char* fname) {
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
 
-	myfile >> problemType;
-	myfile >> solverType;
+	ProblemType tmp;
+	myfile >> tmp;
+	problemType = tmp;
+	myfile >> tmp;
+	problemType = (ProblemType) (problemType | tmp);
+	myfile >> tmp;
+	problemType = (ProblemType)(problemType | tmp);
+	myfile >> tmp;
+	problemType = (ProblemType)(problemType | tmp);
 
 	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
 	float stepX, stepY;
@@ -126,7 +148,7 @@ void Scenario::loadFile(const char* fname) {
 
 	myfile >> packageInputMode;
 	myfile >> nPackage;
-	if (packageInputMode == SINGLE) {
+	if (packageInputMode == SINGLE_POINT) {
 		loadDesignatedPoint(myfile, problemType, packages, nPackage, points);
 	}
 	else if (packageInputMode == POLY) {
@@ -917,7 +939,7 @@ LineAnimation::LineAnimation() {
 
 
 void Scenario::createDroneAnimation() {
-	if (problemType == 1 || problemType == 0) {
+	if ((problemType & (TWODIM | EUCLID | DISCRETE)) == (TWODIM | EUCLID | DISCRETE)) {
 		for (int a = 0; a < activeID.size(); a++) {
 			int matchID = activeID[a];
 			int aniSize = droneAnis.size();
@@ -992,7 +1014,7 @@ void Scenario::createDroneAnimation() {
 
 
 void Scenario::createPackageAnimation() {
-	if (problemType == 1 || problemType == 0) {
+	if ((problemType & (TWODIM | EUCLID | DISCRETE)) == (TWODIM | EUCLID | DISCRETE)) {
 		for (int a = 0; a < activeID.size(); a++) {
 			int matchID = activeID[a];
 			int aniSize = packageAnis.size();
@@ -1069,19 +1091,8 @@ Scenario::Scenario() {
 
 
 void Scenario::solve() {
-	if (problemType == 0) {
-		if (solverType == 0) {
-			//ecld2DType0DynamicSolve11();
-			ecld2DType0DynamicNM();
-			int a = 1;
-			a = a + 1;
-		}
-	}
-	if (problemType == 1) {
-		if (solverType == 1) {
-			ecld2DType1DynamicNM();
-		}
+	if ((problemType & (TWODIM | EUCLID | DISCRETE)) == (TWODIM | EUCLID | DISCRETE)) {
+		if ((problemType & (SINGLE_ID)) == SINGLE_ID) ecld2DType0DynamicNM();
+		else ecld2DType1DynamicNM();
 	}
 }
-
-
