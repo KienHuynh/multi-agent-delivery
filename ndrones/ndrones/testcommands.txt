@@ -1,0 +1,1 @@
+-g 0 -i D:\study\phd_research\main\horsefly\gaurish\pho_experiment_1_exsize_100_myformat\data_exsize_100_repnum_0\data_exsize_100_repnum_0.txt -o output.txt
