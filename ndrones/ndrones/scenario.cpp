@@ -2,10 +2,10 @@
 
 
 std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f) {
-	int num;
-	input >> num;
-	if (num == 0) f = DesignatedPointInputMode::SINGLE_POINT;
-	if (num == 1) f = DesignatedPointInputMode::POLY;
+	std::string tmp;
+	input >> tmp;
+	if (stringEqual(tmp, "single_point")) f = DesignatedPointInputMode::SINGLE_POINT;
+	if (stringEqual(tmp, "poly")) f = DesignatedPointInputMode::POLY;
 
 	return input;
 }
@@ -74,18 +74,18 @@ void Scenario::loadDesignatedPolygon(
 	std::vector<PointState> &points,
 	std::vector<Point2D> &poly) {
 
-	std::vector<Point2D> vList;
+	std::vector<DesignatedPoint> vList;
 	for (int i = 0; i < nDPoint; i++) {
-		int x, y;
-		myfile >> x >> y;
-		vList.push_back(Point2D(x, y));
+		int x, y, id = -1;
+		if ((problemType & (SINGLE_ID)) == SINGLE_ID) myfile >> x >> y;
+		else myfile >> x >> y >> id;
+		vList.push_back(DesignatedPoint(Point2D(x, y), id));
 	}
 
-	poly = vList;
-
 	for (int i = 0; i < vList.size(); i++) {
-		Point2D start = vList[i % nDPoint];
-		Point2D end = vList[(i + 1) % nDPoint];
+		Point2D start = vList[i % nDPoint].loc;
+		Point2D end = vList[(i + 1) % nDPoint].loc;
+		int id = vList[i % nDPoint].ID;
 		// Interpolation
 		for (int s = 0; s < cfg::polySamplingRate; s++) {
 			float rate = ((float)s) / ((float)cfg::polySamplingRate);
@@ -93,7 +93,10 @@ void Scenario::loadDesignatedPolygon(
 			Point2D t2 = t1 * rate;
 			Point2D middle = (end - start)*rate + start;
 
-			dPoints.push_back(DesignatedPoint(middle));
+			dPoints.push_back(DesignatedPoint(middle, id));
+
+			// Check if this designated point already belong to the grid
+			// If not, add it to the point list
 			bool in = false;
 			for (int p = 0; p < points.size(); p++) {
 				Point2D tmp = points[p].p;
@@ -157,10 +160,10 @@ void Scenario::loadFile(const char* fname) {
 
 	myfile >> targetInputMode;
 	myfile >> nTarget;
-	if (targetInputMode == 0) {
+	if (targetInputMode == SINGLE_POINT) {
 		loadDesignatedPoint(myfile, problemType, targets, nTarget, points);
 	}
-	else if (targetInputMode == 1) {
+	else if (targetInputMode == POLY) {
 		loadDesignatedPolygon(myfile, problemType, targets, nTarget, points, targetPoly);
 	}
 
