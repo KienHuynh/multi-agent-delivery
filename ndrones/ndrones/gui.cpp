@@ -294,7 +294,7 @@ void Canvas::drawAgents() {
 
 
 void Canvas::drawPackages() {
-	if (scenario.packageInputMode == SINGLE) {
+	if (scenario.packageInputMode == SINGLE_POINT) {
 		for (int i = 0; i < scenario.packages.size(); i++) {
 			float x = scenario.packages[i].loc.x;
 			float y = scenario.packages[i].loc.y;
@@ -339,7 +339,7 @@ void Canvas::drawPackages() {
 
 
 void Canvas::drawTargets() {
-	if (scenario.targetInputMode == SINGLE) {
+	if (scenario.targetInputMode == SINGLE_POINT) {
 		for (int i = 0; i < scenario.targets.size(); i++) {
 			float x = scenario.targets[i].loc.x;
 			float y = scenario.targets[i].loc.y;
@@ -558,9 +558,6 @@ GUI::GUI(int winWidth, int winHeight) {
 	packageAniBu->callback(aniRadioCallback, (void*)PACKAGEANI);
 
 	rb_group->end();
-
-	//drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 3, 160, 25, "Run script");
-	//drawBu->callback(runScriptCallback);
 
 	// Create  the actual canvas
 	canvas = new Canvas(Canvas::canvasX, Canvas::canvasY, Canvas::canvasWidth, Canvas::canvasHeight, 0);
