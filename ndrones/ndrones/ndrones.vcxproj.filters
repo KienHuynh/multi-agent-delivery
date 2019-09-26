@@ -24,6 +24,12 @@
     <ClCompile Include="base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scenario.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -35,12 +41,24 @@
     <ClInclude Include="base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scenario.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="input.txt">
       <Filter>Resource Files</Filter>
     </Text>
     <Text Include="input_small.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="inputDescription.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="testcommands.txt">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>
