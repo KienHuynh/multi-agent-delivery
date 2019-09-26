@@ -12,6 +12,7 @@
 #include <chrono>
 
 #include "config.h"
+#include "util.h"
 
 
 enum Solver {ECLD_2D_DYNAMIC};
