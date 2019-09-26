@@ -305,6 +305,7 @@ void Scenario::ecld2DType0DynamicNM() {
 
 	bestAgentQueues[0] = points[bestTarget.gridRef].agentQueue;
 	bestPointQueues[0] = points[bestTarget.gridRef].pointQueue;
+	bestPointQueues[0].push_back(bestTarget.loc);
 	bestTargets[0] = bestTarget;
 	bestTimes[0] = points[bestTarget.gridRef].bestTime;
 	overallTime = bestTimes[0];
@@ -633,7 +634,6 @@ bool Scenario::missingQueue(std::vector<Agent>* qs) {
 }
 
 
-// TODO: Implement target / package cluster with unique ID for easier management
 void Scenario::ecld2DType1DynamicNM() {
 
 	// An ID is active if there exists a package-target matching for it
@@ -772,7 +772,6 @@ void Scenario::ecld2DType1DynamicNM() {
 			delete bestTimes;
 		}
 
-		// TODO: Re-add used agents here
 		// Compute the solution for each matching using agents from bestAgentQueues
 		// and remaining agents that weren't assigned to anything (they are either generating
 		// no conflict or they have no use)
@@ -953,45 +952,24 @@ void Scenario::createDroneAnimation() {
 				int color = 255 * (bestAgentQueues[a][i].v - minSpeed) / (maxSpeed - minSpeed);
 				LineAnimation tmpAni0, tmpAni1;
 				std::vector<LineAnimation> tmpAni;
-				if (i < bestAgentQueues[a].size() - 1) {
-					tmpAni0.setColor(25, 25, color);
-					tmpAni1.setColor(25, 25, color);
+				
+				tmpAni0.setColor(25, 25, color);
+				tmpAni1.setColor(25, 25, color);
 
-					tmpAni0.start = bestAgentQueues[a][i].loc0;
-					tmpAni0.end = bestPointQueues[a][i];
-					tmpAni0.startTime = bestAgentQueues[a][i].delay;
-					tmpAni0.endTime = tmpAni0.startTime +
-						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
-					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+				tmpAni0.start = bestAgentQueues[a][i].loc0;
+				tmpAni0.end = bestPointQueues[a][i];
+				tmpAni0.startTime = bestAgentQueues[a][i].delay;
+				tmpAni0.endTime = tmpAni0.startTime +
+					bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
+				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
 
-
-					tmpAni1.start = tmpAni0.end;
-					tmpAni1.end = bestPointQueues[a][i + 1];
-					tmpAni1.startTime = tmpAni0.endTime;
-					tmpAni1.endTime = tmpAni1.startTime +
-						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
-					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-				}
-				// Special treatment for last agent
-				// TODO: trim this down later, redundant code
-				else {
-					tmpAni0.setColor(25, 25, color);
-					tmpAni1.setColor(25, 25, color);
-
-					tmpAni0.start = bestAgentQueues[a][i].loc0;
-					tmpAni0.end = bestPointQueues[a][i];
-					tmpAni0.startTime = bestAgentQueues[a][i].delay;
-					tmpAni0.endTime = tmpAni0.startTime +
-						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
-					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
-
-					tmpAni1.start = tmpAni0.end;
-					tmpAni1.end = points[bestTargets[a].gridRef].p;
-					tmpAni1.startTime = tmpAni0.endTime;
-					tmpAni1.endTime = tmpAni1.startTime +
-						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
-					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-				}
+				tmpAni1.start = tmpAni0.end;
+				tmpAni1.end = bestPointQueues[a][i + 1];
+				tmpAni1.startTime = tmpAni0.endTime;
+				tmpAni1.endTime = tmpAni1.startTime +
+					bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
+				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				
 				// These are only specific to this problem only because we know that each agent only generates 2 animations
 				tmpAni1.prevAni.push_back(i * 2 + aniSize);
 				if (i > 0) tmpAni1.prevAni.push_back((i - 1) * 2 + 1 + aniSize);
@@ -1026,43 +1004,23 @@ void Scenario::createPackageAnimation() {
 			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
 				LineAnimation tmpAni0, tmpAni1;
 				std::vector<LineAnimation> tmpAni;
-				if (i < bestAgentQueues[a].size() - 1) {
-					tmpAni1.setColor(255, 0, 0);
 
-					tmpAni0.start = bestAgentQueues[a][i].loc0;
-					tmpAni0.end = bestPointQueues[a][i];
-					tmpAni0.startTime = bestAgentQueues[a][i].delay;
-					tmpAni0.endTime = tmpAni0.startTime +
-						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
-					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+				tmpAni1.setColor(255, 0, 0);
 
+				tmpAni0.start = bestAgentQueues[a][i].loc0;
+				tmpAni0.end = bestPointQueues[a][i];
+				tmpAni0.startTime = bestAgentQueues[a][i].delay;
+				tmpAni0.endTime = tmpAni0.startTime +
+					bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
+				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
 
-					tmpAni1.start = tmpAni0.end;
-					tmpAni1.end = bestPointQueues[a][i + 1];
-					tmpAni1.startTime = tmpAni0.endTime;
-					tmpAni1.endTime = tmpAni1.startTime +
-						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
-					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-				}
-				// Special treatment for last agent
-				// TODO: trim this down later, redundant code
-				else {
-					tmpAni1.setColor(255, 0, 0);
-
-					tmpAni0.start = bestAgentQueues[a][i].loc0;
-					tmpAni0.end = bestPointQueues[a][i];
-					tmpAni0.startTime = bestAgentQueues[a][i].delay;
-					tmpAni0.endTime = tmpAni0.startTime +
-						bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
-					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
-
-					tmpAni1.start = tmpAni0.end;
-					tmpAni1.end = points[bestTargets[a].gridRef].p;
-					tmpAni1.startTime = tmpAni0.endTime;
-					tmpAni1.endTime = tmpAni1.startTime +
-						bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
-					tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-				}
+				tmpAni1.start = tmpAni0.end;
+				tmpAni1.end = bestPointQueues[a][i + 1];
+				tmpAni1.startTime = tmpAni0.endTime;
+				tmpAni1.endTime = tmpAni1.startTime +
+					bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
+				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				
 				// These are only specific to this problem only because we know that each agent only generates 2 animations
 				// tmpAni1.prevAni.push_back(i * 2 + aniSize);
 				if (i > 0) tmpAni1.prevAni.push_back(i - 1 + aniSize);

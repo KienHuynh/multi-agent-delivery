@@ -5,6 +5,7 @@
 #pragma once
 
 #include <array>
+#include <sstream>
 
 #include "base.h"
 
@@ -156,7 +157,6 @@ private:
 
 	// Load package regions and target regions as polygons.
 	// These polygons will be discretized by their edges.
-	// TODO: Allow this function to add polygons with different IDs.
 	// @param[in] myfile ifstream object with the input file already loaded.
 	// @param[in] problemType problem type, see inputDescription.txt.
 	// @param[out] dPoints the array of DesignatedPoint to store the package/target locations.
