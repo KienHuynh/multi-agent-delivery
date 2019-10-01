@@ -915,6 +915,7 @@ void Scenario::ecld2DType1DynamicNM() {
 		bestTimes[a] = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
 		if (overallTime == -1 || overallTime < bestTimes[a]) overallTime = bestTimes[a];
 		bestPointQueues[a] = pointsCopy[bestTargets[a].gridRef].pointQueue;
+		bestPointQueues[a].push_back(bestTargets[a].loc);
 		// Shouldn't be different
 		bestAgentQueues[a] = pointsCopy[bestTargets[a].gridRef].agentQueue;
 
