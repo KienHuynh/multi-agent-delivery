@@ -108,7 +108,12 @@ void GUI::runScriptCallback(Fl_Widget *w, void *data) {
 
 
 void GUI::aniRadioCallback(Fl_Widget*w, void*data) {
-	canvas->aniMode = (AnimationMode) (int) data;
+	canvas->aniMode = (AnimationMode) (int)data;
+}
+
+
+void GUI::gridVisRadioCallback(Fl_Widget*w, void*data) {
+	canvas->gridVisMode = (GridVisualizationMode)(int)data;
 }
 
 
@@ -537,27 +542,50 @@ GUI::GUI(int winWidth, int winHeight) {
 	menu->add("File/Save", FL_CTRL + 's', saveResultCallback);
 
 	// Assign callbacks to corresponding buttons
-	runAllBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit, 160, 25, "Solve");
+	runAllBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit, 160, yButtonUnit/2, "Solve");
 	runAllBu->callback(solverCallback);
-	
-	drawBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, 25, "Animate");
-	drawBu->callback(drawSignalCallback);
-	
-	// Group of radio buttons which allow user to choose animation mode
-	Fl_Group* rb_group = new Fl_Group(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2.8, 180, 50); 
-	rb_group->box(FL_UP_FRAME);
-	
-	droneAniBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 3, 10, 10, "Animate drones path");
-	droneAniBu->type(102);
-	droneAniBu->down_box(FL_ROUND_DOWN_BOX);
-	droneAniBu->callback(aniRadioCallback, (void*)DRONEANI);
-	
-	packageAniBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 3.5, 10, 10, "Animate package path");
-	packageAniBu->type(102);
-	packageAniBu->down_box(FL_ROUND_DOWN_BOX);
-	packageAniBu->callback(aniRadioCallback, (void*)PACKAGEANI);
 
-	rb_group->end();
+	droneAniBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2, 160, yButtonUnit / 2, "Animate");
+	droneAniBu->callback(drawSignalCallback);
+
+	// Group of radio buttons which allow user to choose animation mode [droneani]
+	Fl_Group* aniOptionGroup = new Fl_Group(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 2.8, 180, 50); 
+	aniOptionGroup->box(FL_UP_FRAME);
+
+	droneAniOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 3, 10, 10, "Animate drones path");
+	droneAniOptBu->type(102);
+	droneAniOptBu->down_box(FL_ROUND_DOWN_BOX);
+	droneAniOptBu->callback(aniRadioCallback, (void*)DRONEANI);
+	
+	packageAniOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 3.5, 10, 10, "Animate package path");
+	packageAniOptBu->type(102);
+	packageAniOptBu->down_box(FL_ROUND_DOWN_BOX);
+	packageAniOptBu->callback(aniRadioCallback, (void*)PACKAGEANI);
+
+	aniOptionGroup->end();
+
+	droneAniBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 4.5, 160, yButtonUnit / 2, "Visualiza grid");
+	droneAniBu->callback(drawSignalCallback);
+
+	// Group of radio buttons which allow user to choose grid visualization mod [gridvis]
+	Fl_Group* gridVisOptionGroup = new Fl_Group(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 5.3, 180, 75);
+	gridVisOptionGroup->box(FL_UP_FRAME);
+
+	shortestPathMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 5.5, 10, 10, "Shortest path map");
+	shortestPathMapOptBu->type(102);
+	shortestPathMapOptBu->down_box(FL_ROUND_DOWN_BOX);
+	shortestPathMapOptBu->callback(aniRadioCallback, (void*)DRONEANI);
+
+	droneUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6, 10, 10, "Drone usage map");
+	droneUsageMapOptBu->type(102);
+	droneUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
+	droneUsageMapOptBu->callback(aniRadioCallback, (void*)PACKAGEANI);
+
+	depotUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6.5, 10, 10, "Depot usage map");
+	depotUsageMapOptBu->type(102);
+	depotUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
+	depotUsageMapOptBu->callback(aniRadioCallback, (void*)PACKAGEANI);
+	gridVisOptionGroup->end();
 
 	// Create  the actual canvas
 	canvas = new Canvas(Canvas::canvasX, Canvas::canvasY, Canvas::canvasWidth, Canvas::canvasHeight, 0);

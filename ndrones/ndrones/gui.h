@@ -34,6 +34,7 @@ static Fl_File_Chooser *G_chooser = NULL;
 
 
 enum AnimationMode{DRONEANI, PACKAGEANI};
+enum GridVisualizationMode {STPMAP, DRONEUSAGEMAP, DEPOTUSAGEMAP};
 
 
 // The main class that display images and drawings
@@ -109,6 +110,9 @@ public:
 	// Animation
 	AnimationMode aniMode;
 
+	// Grid visualization
+	GridVisualizationMode gridVisMode;
+
 	Canvas(int X, int Y, int W, int H, const char *L);
 	~Canvas();
 	int mouseX, mouseY;
@@ -121,13 +125,16 @@ public:
 
 	// Buttons
 	Fl_Button *runAllBu;
-	Fl_Button *drawBu;
+	Fl_Button *droneAniBu;
+	Fl_Button *gridVisBu;
 	Fl_Button *scriptBu;
 	Fl_Button *clearBu;
 	Fl_Menu_Bar *menuBar;
-	Fl_Round_Button *droneAniBu;
-	Fl_Round_Button *packageAniBu;
-
+	Fl_Round_Button *droneAniOptBu;
+	Fl_Round_Button *packageAniOptBu;
+	Fl_Round_Button *shortestPathMapOptBu; // Radio button for shorest path map
+	Fl_Round_Button *droneUsageMapOptBu; // Radio button for drone usage map
+	Fl_Round_Button *depotUsageMapOptBu; // Radio button for depot usage (useful only if there are more than one depot)
 	Fl_Window *win;
 
 	static std::string canvasFileName;
@@ -146,14 +153,19 @@ public:
 	static void browseCallback(Fl_Widget*w, void*data);
 	// Callback function for save button
 	static void saveResultCallback(Fl_Widget*w, void*data);
+
 	// Callback for the solver
 	static void solverCallback(Fl_Widget*w, void*data);
+
 	// Callback to set draw signal = true
 	static void drawSignalCallback(Fl_Widget*w, void*data);
 	// Callback to run a script
 	static void runScriptCallback(Fl_Widget*w, void*data);
 	// Callback to set animation mode
 	static void aniRadioCallback(Fl_Widget*w, void*data);
+
+	// Callback to set the grid visualization mode
+	static void gridVisRadioCallback(Fl_Widget*w, void*data);
 };
 
 #endif
