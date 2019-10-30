@@ -467,9 +467,33 @@ bool Scenario::conflictResolve(
 	int &bestMatchingInd, 
 	int &bestAgentInd) {
 
+	//// TODO: improve this block of codes
+	//bool stop = false;
+	//for (int k = 0; k < agents.size() && !stop; k++) {
+	//	int _bestAgentInd = -1;
+	//	int _bestMatchingInd = -1;
+	//	int assignmentCount = 0;
+	//	for (int a = 0; a < activeID.size() && !stop; a++) {
+	//		if (_agentAssignment[a][k] == 1) {
+	//			_bestAgentInd = k;
+	//			_bestMatchingInd = a;
+	//			assignmentCount += 1;
+	//		}
+	//		if (assignmentCount == 2) {
+	//			stop = true;
+	//			break;
+	//		}
+	//	}
+	//	if (assignmentCount == 1) {
+	//		bestMatchingInd = _bestMatchingInd;
+	//		bestAgentInd = _bestAgentInd;
+	//		return false;
+	//	}
+	//}
+
 	float** bestTimesWithout_k = new float*[_activeID.size()];
 	// This stores the overall time (i.e. max of all delivery time of all matchings) when 
-	// agent k is assigned to matching i (so other matching DOES NOT HAVE this agent)
+	// agent k is assigned to matching i (other matchings DO NOT HAVE this agent)
 	float** overallTime_k = new float*[_activeID.size()];
 	for (int a = 0; a < activeID.size(); a++) {
 		bestTimesWithout_k[a] = new float[_agents.size()];
