@@ -10,6 +10,7 @@ Scenario Canvas::scenario;
 
 bool GUI::bigRedrawSignal = 0;
 bool GUI::drawSignal = false;
+bool GUI::drawGridSignal = false;
 std::string GUI::canvasFileName = "";
 Canvas* GUI::canvas = NULL;
 
@@ -100,6 +101,11 @@ void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	Canvas::scenario.timer = ((float)mili) / 1000;
 }
+
+
+void GUI::drawGridSignalCallback(Fl_Widget *w, void *data) {
+	drawGridSignal = !drawGridSignal;
+};
 
 
 void GUI::runScriptCallback(Fl_Widget *w, void *data) {
@@ -468,6 +474,19 @@ void Canvas::drawGridLines() {
 }
 
 
+void Canvas::drawGridPoints() {
+	if (!GUI::drawGridSignal) return;
+	for (int i = 0; i < scenario.points.size(); i++) {
+		if (scenario.points[i].isDesignatedPoint) continue;
+		fl_color(fl_rgb_color(25, 25, 25));
+		float x = scenario.points[i].p.x;
+		float y = scenario.points[i].p.y;
+		scenToCanvasCoord(x, y);
+		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+	}
+}
+
+
 void Canvas::draw() {
 
 	if (GUI::bigRedrawSignal) {
@@ -485,10 +504,12 @@ void Canvas::draw() {
 		fl_font(FL_COURIER, 80);
 	}
 
+	drawGridPoints();
 	drawAgents();
 	drawPackages();
 	drawTargets();
 	drawAnimation();
+	
 }
 
 
@@ -564,8 +585,8 @@ GUI::GUI(int winWidth, int winHeight) {
 
 	aniOptionGroup->end();
 
-	droneAniBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 4.5, 160, yButtonUnit / 2, "Visualiza grid");
-	droneAniBu->callback(drawSignalCallback);
+	gridVisBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 4.5, 160, yButtonUnit / 2, "Visualiza grid");
+	gridVisBu->callback(drawGridSignalCallback);
 
 	// Group of radio buttons which allow user to choose grid visualization mod [gridvis]
 	Fl_Group* gridVisOptionGroup = new Fl_Group(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 5.3, 180, 75);
@@ -574,17 +595,17 @@ GUI::GUI(int winWidth, int winHeight) {
 	shortestPathMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 5.5, 10, 10, "Shortest path map");
 	shortestPathMapOptBu->type(102);
 	shortestPathMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	shortestPathMapOptBu->callback(aniRadioCallback, (void*)DRONEANI);
+	shortestPathMapOptBu->callback(aniRadioCallback, (void*)STPMAP);
 
 	droneUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6, 10, 10, "Drone usage map");
 	droneUsageMapOptBu->type(102);
 	droneUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	droneUsageMapOptBu->callback(aniRadioCallback, (void*)PACKAGEANI);
+	droneUsageMapOptBu->callback(aniRadioCallback, (void*)DRONEUSAGEMAP);
 
 	depotUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6.5, 10, 10, "Depot usage map");
 	depotUsageMapOptBu->type(102);
 	depotUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	depotUsageMapOptBu->callback(aniRadioCallback, (void*)PACKAGEANI);
+	depotUsageMapOptBu->callback(aniRadioCallback, (void*)DEPOTUSAGEMAP);
 	gridVisOptionGroup->end();
 
 	// Create  the actual canvas

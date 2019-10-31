@@ -55,6 +55,9 @@ protected:
 	// Draw grid lines
 	void drawGridLines();
 
+	// Draw grid points
+	void drawGridPoints();
+
 	// Draw the agents
 	void drawAgents();
 
@@ -144,6 +147,8 @@ public:
 	// Big redraw signal makes the canvas wipe everything, it's a bit slower so normally the small signal is preferred
 	static bool bigRedrawSignal;
 
+	static bool drawGridSignal;
+	
 	GUI(int winWidth, int winHeight);
 	~GUI();
 
@@ -159,6 +164,8 @@ public:
 
 	// Callback to set draw signal = true
 	static void drawSignalCallback(Fl_Widget*w, void*data);
+	// Callback to set draw signal for the grid = true
+	static void drawGridSignalCallback(Fl_Widget*w, void*data);
 	// Callback to run a script
 	static void runScriptCallback(Fl_Widget*w, void*data);
 	// Callback to set animation mode
