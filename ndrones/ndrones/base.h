@@ -22,6 +22,9 @@ enum Solver {ECLD_2D_DYNAMIC};
 class Agent;
 
 
+
+
+
 // Basic 2D point class
 class Point2D {
 public:
@@ -50,6 +53,10 @@ public:
 class PointState {
 public:
 	Point2D p;
+
+	// Is true if this is a DesignatedPoint (package, target, etc.). Assigned when loading file.
+	bool isDesignatedPoint;
+
 	std::vector<Agent> agentQueue;
 	// Queue of points that were previously visited by the above agents
 	// Example:

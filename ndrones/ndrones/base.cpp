@@ -72,6 +72,7 @@ bool Point2D::operator == (Point2D const &obj) {
 PointState::PointState(Point2D _p) {
 	p = _p;
 	bestTime = -1;
+	isDesignatedPoint = false;
 }
 
 
