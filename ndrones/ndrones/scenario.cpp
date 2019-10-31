@@ -52,6 +52,7 @@ void Scenario::loadDesignatedPoint(
 			if (tmp.x == dPoints[dPoints.size() - 1].loc.x &&
 				tmp.y == dPoints[dPoints.size() - 1].loc.y) {
 				dPoints[dPoints.size() - 1].gridRef = p;
+				points[p].isDesignatedPoint = true;
 				in = true;
 				break;
 			}
@@ -60,6 +61,7 @@ void Scenario::loadDesignatedPoint(
 		// Add a new point into the grid
 		if (in == false) {
 			points.push_back(PointState(dPoints[dPoints.size() - 1].loc));
+			points[points.size() - 1].isDesignatedPoint = true;
 			dPoints[dPoints.size() - 1].gridRef = points.size() - 1;
 		}
 	}
@@ -103,11 +105,13 @@ void Scenario::loadDesignatedPolygon(
 				if (tmp.x == dPoints[dPoints.size() - 1].loc.x &&
 					tmp.y == dPoints[dPoints.size() - 1].loc.y) {
 					dPoints[dPoints.size() - 1].gridRef = p;
+					points[p].isDesignatedPoint = true;
 					in = true;
 				}
 			}
 			if (in == false) {
 				points.push_back(PointState(dPoints[dPoints.size() - 1].loc));
+				points[points.size() - 1].isDesignatedPoint = true;
 				dPoints[dPoints.size() - 1].gridRef = points.size() - 1;
 			}
 		}
@@ -233,6 +237,16 @@ bool Scenario::isPackage(int id, std::vector<DesignatedPoint> _packages) {
 		}
 	}
 	return false;
+}
+
+
+unsigned char* Scenario::agentQueueColorMap(std::vector<Agent> _agents) {
+	
+}
+
+
+bool Scenario::isDesignatedPoint(PointState ps) {
+	return ps.isDesignatedPoint;
 }
 
 

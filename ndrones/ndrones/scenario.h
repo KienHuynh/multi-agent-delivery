@@ -99,6 +99,16 @@ public:
 	// @return bool
 	bool isPackage(int, std::vector<DesignatedPoint>);
 
+	// Check if a point is one of the Designated Points (target, package, etc.)
+	// @param[in] Point2D p
+	// @return bool
+	bool isDesignatedPoint(PointState ps);
+
+	// Mapping from list of agents to some predefined colors
+	// @parm[in] std::vector<Agent> agents
+	// @parm[out] unsigned char* colorVector (size 3x1)
+	unsigned char* agentQueueColorMap(std::vector<Agent>);
+
 	// Euclidean 2D (problem) type 0, dynamic solver for 1 drone and 1 package.
 	// Approximation of opt..=
 	void ecld2DType0Dynamic11();
