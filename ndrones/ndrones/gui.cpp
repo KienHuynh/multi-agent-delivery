@@ -14,6 +14,7 @@ bool GUI::drawGridSignal = false;
 std::string GUI::canvasFileName = "";
 Canvas* GUI::canvas = NULL;
 
+
 void GUI::exitCallback(Fl_Widget*w, void*data) {
 	exit(0);
 }
@@ -103,8 +104,43 @@ void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 }
 
 
+void Canvas::computeColorMap() {
+	// Compute color map
+	for (int i = 0; i < scenario.points.size(); i++) {
+		Color color(255, 255, 255);
+		if (gridVisMode == STPMAP) {
+			color = Scenario::agentQueueColorMap(scenario.points[i].agentQueue);
+			for (auto a : scenario.points[i].agentQueue) {
+				std::cout << a.v << " ";
+			}
+			std::cout << std::endl;
+			std::cout << (int) color.r << " "  
+				<< (int) color.g << " "
+				<< (int) color.b << " " << std::endl;
+		}
+		if (gridVisMode == DRONEUSAGEMAP) {
+
+		}
+		if (gridVisMode == DEPOTUSAGEMAP) {
+			int depot = -1;
+			for (int p = 0; p < scenario.packages.size(); p++) {
+				if (scenario.points[i].pointQueue.size() == 0) continue;
+				if (scenario.points[i].pointQueue[0] == scenario.packages[p].loc) {
+					depot = p;
+					break;
+				}
+			}
+			
+			if (depot > -1)	color = Scenario::depotColorMap(scenario.packages[depot]);
+		}
+		gridColor.push_back(color);
+	}
+}
+
 void GUI::drawGridSignalCallback(Fl_Widget *w, void *data) {
+	if (canvas->gridVisMode == UNDEFINED) return;
 	drawGridSignal = !drawGridSignal;
+	canvas->computeColorMap();
 };
 
 
@@ -478,11 +514,12 @@ void Canvas::drawGridPoints() {
 	if (!GUI::drawGridSignal) return;
 	for (int i = 0; i < scenario.points.size(); i++) {
 		if (scenario.points[i].isDesignatedPoint) continue;
-		fl_color(fl_rgb_color(25, 25, 25));
+		
+		fl_color(fl_rgb_color(gridColor[i].r, gridColor[i].g, gridColor[i].b));
 		float x = scenario.points[i].p.x;
 		float y = scenario.points[i].p.y;
 		scenToCanvasCoord(x, y);
-		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
+		fl_pie(((int)x) - 2.5, ((int)y) - 2.5, 5, 5, 0, 360);
 	}
 }
 
@@ -528,6 +565,7 @@ Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Group(X, Y, W
 	Fl::add_timeout(0.001, timerCallback, (void*)this);
 
 	aniMode = DRONEANI;
+	gridVisMode = UNDEFINED;
 }
 
 
@@ -595,21 +633,24 @@ GUI::GUI(int winWidth, int winHeight) {
 	shortestPathMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 5.5, 10, 10, "Shortest path map");
 	shortestPathMapOptBu->type(102);
 	shortestPathMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	shortestPathMapOptBu->callback(aniRadioCallback, (void*)STPMAP);
+	shortestPathMapOptBu->callback(gridVisRadioCallback, (void*)STPMAP);
 
 	droneUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6, 10, 10, "Drone usage map");
 	droneUsageMapOptBu->type(102);
 	droneUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	droneUsageMapOptBu->callback(aniRadioCallback, (void*)DRONEUSAGEMAP);
+	droneUsageMapOptBu->callback(gridVisRadioCallback, (void*)DRONEUSAGEMAP);
 
 	depotUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6.5, 10, 10, "Depot usage map");
 	depotUsageMapOptBu->type(102);
 	depotUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	depotUsageMapOptBu->callback(aniRadioCallback, (void*)DEPOTUSAGEMAP);
+	depotUsageMapOptBu->callback(gridVisRadioCallback, (void*)DEPOTUSAGEMAP);
 	gridVisOptionGroup->end();
 
 	// Create  the actual canvas
 	canvas = new Canvas(Canvas::canvasX, Canvas::canvasY, Canvas::canvasWidth, Canvas::canvasHeight, 0);
+
+	// Init the color palette
+	Palette::createPalette();
 
 	win->resizable(win);
 	win->show();

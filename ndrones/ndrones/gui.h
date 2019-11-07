@@ -34,7 +34,7 @@ static Fl_File_Chooser *G_chooser = NULL;
 
 
 enum AnimationMode{DRONEANI, PACKAGEANI};
-enum GridVisualizationMode {STPMAP, DRONEUSAGEMAP, DEPOTUSAGEMAP};
+enum GridVisualizationMode {UNDEFINED, STPMAP, DRONEUSAGEMAP, DEPOTUSAGEMAP};
 
 
 // The main class that display images and drawings
@@ -115,6 +115,10 @@ public:
 
 	// Grid visualization
 	GridVisualizationMode gridVisMode;
+	std::vector<Color> gridColor;
+
+	// Compute the colors for grid points based on one of the GridVisualizationMode
+	void computeColorMap();
 
 	Canvas(int X, int Y, int W, int H, const char *L);
 	~Canvas();
@@ -148,7 +152,7 @@ public:
 	static bool bigRedrawSignal;
 
 	static bool drawGridSignal;
-	
+
 	GUI(int winWidth, int winHeight);
 	~GUI();
 
