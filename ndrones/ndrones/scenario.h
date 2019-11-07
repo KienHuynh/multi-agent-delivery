@@ -106,8 +106,19 @@ public:
 
 	// Mapping from list of agents to some predefined colors
 	// @parm[in] std::vector<Agent> agents
-	// @parm[out] unsigned char* colorVector (size 3x1)
-	unsigned char* agentQueueColorMap(std::vector<Agent>);
+	// @parm[out] Color
+	static Color agentQueueColorMap(std::vector<Agent>);
+
+	// Mapping from agent to some predefined colors
+	// @parm[in] Agent agent
+	// @parm[out] Color
+	static Color agentColorMap(Agent);
+
+	// Mapping from depot to some predefined colors
+	// @parm[in] DesignatedPoint dp
+	// @parm[out] Color
+	static Color depotColorMap(DesignatedPoint);
+
 
 	// Euclidean 2D (problem) type 0, dynamic solver for 1 drone and 1 package.
 	// Approximation of opt..=

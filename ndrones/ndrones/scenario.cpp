@@ -240,8 +240,30 @@ bool Scenario::isPackage(int id, std::vector<DesignatedPoint> _packages) {
 }
 
 
-unsigned char* Scenario::agentQueueColorMap(std::vector<Agent> _agents) {
-	
+Color Scenario::agentQueueColorMap(std::vector<Agent> _agents) {
+	int seed = 0;
+	for (int i = 0; i < _agents.size(); i++) {
+		seed += _agents[i].ID*_agents[i].loc.x + _agents[i].loc.y;
+	}
+	srand(seed);
+	int id = (rand()+1111) % cfg::numColor;
+	return Palette::palette[id];
+}
+
+
+Color Scenario::agentColorMap(Agent agent) {
+	srand(agent.ID);
+	return Palette::palette[rand() % cfg::numColor];
+}
+
+
+Color Scenario::depotColorMap(DesignatedPoint dp) {
+	srand(dp.ID*(int)dp.loc.x+(int)dp.loc.y);
+	int x = rand() % cfg::numColor;
+	/*std::cout << x << " " << (int)Palette::palette[x].r << " " <<
+		(int) Palette::palette[x].g << " " <<
+		(int)Palette::palette[x].b << " " <<std::endl;*/
+	return Palette::palette[x];
 }
 
 
