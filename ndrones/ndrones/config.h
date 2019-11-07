@@ -9,4 +9,7 @@ namespace cfg {
 	// If these two are > 0, they will override the values in the input file
 	const float stepX = -1;
 	const float stepY = -1;
+
+	// Number of colors for the palette
+	const int numColor = 2048;
 }
