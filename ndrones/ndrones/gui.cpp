@@ -105,21 +105,22 @@ void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 
 
 void Canvas::computeColorMap() {
+	float s = scenario.points[0].bestTime;
+	float l = s;
+
+	for (int i = 1; i < scenario.points.size(); i++) {
+		if (s > scenario.points[i].bestTime) s = scenario.points[i].bestTime;
+		if (l < scenario.points[i].bestTime) l = scenario.points[i].bestTime;
+	}
+
 	// Compute color map
 	for (int i = 0; i < scenario.points.size(); i++) {
 		Color color(255, 255, 255);
 		if (gridVisMode == STPMAP) {
-			color = Scenario::agentQueueColorMap(scenario.points[i].agentQueue);
-			for (auto a : scenario.points[i].agentQueue) {
-				std::cout << a.v << " ";
-			}
-			std::cout << std::endl;
-			std::cout << (int) color.r << " "  
-				<< (int) color.g << " "
-				<< (int) color.b << " " << std::endl;
+			color = Scenario::agentQueueColorMap(scenario.points[i].agentQueue);	
 		}
-		if (gridVisMode == DRONEUSAGEMAP) {
-
+		if (gridVisMode == STIMEMAP) {
+			color = Scenario::bestTimeColorMap(s, l, scenario.points[i].bestTime);
 		}
 		if (gridVisMode == DEPOTUSAGEMAP) {
 			int depot = -1;
@@ -635,15 +636,15 @@ GUI::GUI(int winWidth, int winHeight) {
 	shortestPathMapOptBu->down_box(FL_ROUND_DOWN_BOX);
 	shortestPathMapOptBu->callback(gridVisRadioCallback, (void*)STPMAP);
 
-	droneUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6, 10, 10, "Drone usage map");
+	droneUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6, 10, 10, "Depot usage map");
 	droneUsageMapOptBu->type(102);
 	droneUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	droneUsageMapOptBu->callback(gridVisRadioCallback, (void*)DRONEUSAGEMAP);
+	droneUsageMapOptBu->callback(gridVisRadioCallback, (void*)DEPOTUSAGEMAP);
 
-	depotUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6.5, 10, 10, "Depot usage map");
+	depotUsageMapOptBu = new Fl_Round_Button(Canvas::canvasWidth + xButtonUnit + 5, menuBarHeight + yButtonUnit * 6.5, 10, 10, "Shortest time map");
 	depotUsageMapOptBu->type(102);
 	depotUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
-	depotUsageMapOptBu->callback(gridVisRadioCallback, (void*)DEPOTUSAGEMAP);
+	depotUsageMapOptBu->callback(gridVisRadioCallback, (void*)STIMEMAP);
 	gridVisOptionGroup->end();
 
 	// Create  the actual canvas

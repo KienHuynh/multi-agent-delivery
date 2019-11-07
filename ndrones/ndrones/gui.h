@@ -34,7 +34,7 @@ static Fl_File_Chooser *G_chooser = NULL;
 
 
 enum AnimationMode{DRONEANI, PACKAGEANI};
-enum GridVisualizationMode {UNDEFINED, STPMAP, DRONEUSAGEMAP, DEPOTUSAGEMAP};
+enum GridVisualizationMode {UNDEFINED, STPMAP, STIMEMAP, DEPOTUSAGEMAP};
 
 
 // The main class that display images and drawings
