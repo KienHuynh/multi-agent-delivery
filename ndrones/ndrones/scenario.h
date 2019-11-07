@@ -8,6 +8,11 @@
 #include <sstream>
 
 #include "base.h"
+#include "scenarioIO.h"
+
+
+class ScenarioIO;
+
 
 enum DesignatedPointInputMode {
 	SINGLE_POINT, POLY
@@ -32,11 +37,6 @@ enum ProblemType {
 	// MULTI_ID: 7th bit = 0
 };
 
-
-std::istream& operator >> (std::istream &input, ProblemType& p);
-
-
-std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f);
 
 // The core class of the project
 // Store the scenario: data points, designated points (packages, targets), agents
@@ -86,11 +86,16 @@ public:
 
 	Scenario();
 
-	// Load scenario from file.
+
+	// Function to call the actual load function (s) in ScenarioIO
+	// @param[in] const char* fileName
 	void loadFile(const char*);
 
-	// Write solution to a file
-	void writeSolution(const char* outputFile);
+
+	// Function to call the actual write function (s) in ScenarioIO
+	// @param[in] const char* fileName
+	void writeSolution(const char*);
+
 
 	// Check if a point is one of the packages
 	// TODO: use better data structure?
@@ -167,38 +172,6 @@ public:
 	void solve();
 
 private:
-	// This is used to load target points or package points.
-	// Load points such as packages and targets.
-	// If a point already exists in the grid above, re-use it.
-	// Otherwise, add a new point to the grid.
-	// @param[in] myfile ifstream object with the input file already loaded.
-	// @param[in] problemType problem type, see inputDescription.txt.
-	// @param[out] dPoints the array of DesignatedPoint to store the package/target locations.
-	// @param[out] nDPoint number of designated points.
-	// @param[in] points the point grid.
-	void loadDesignatedPoint(
-		std::ifstream &myfile,
-		ProblemType problemType,
-		std::vector<DesignatedPoint> &dPoints,
-		int nDPoint,
-		std::vector<PointState> &points);
-
-	// Load package regions and target regions as polygons.
-	// These polygons will be discretized by their edges.
-	// @param[in] myfile ifstream object with the input file already loaded.
-	// @param[in] problemType problem type, see inputDescription.txt.
-	// @param[out] dPoints the array of DesignatedPoint to store the package/target locations.
-	// @param[out] nDPoint number of designated points.
-	// @param[out] points the point grid.
-	// @param[out] poly the polygon to be stored for drawing.
-	void loadDesignatedPolygon(
-		std::ifstream &myfile,
-		ProblemType problemType,
-		std::vector<DesignatedPoint> &dPoints,
-		int nDPoint,
-		std::vector<PointState> &points,
-		std::vector<Point2D> &poly);
-
 	// There might be multiple targets of the same matching / role (i.e. our agents can deliver one package to any of them
 	// Find the best delivery among all targets
 	// @param[in] _points the point grid
