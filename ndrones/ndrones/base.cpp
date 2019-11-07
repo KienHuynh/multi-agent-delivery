@@ -1,6 +1,90 @@
 #include "base.h"
 
 
+// Color
+Color::Color() {
+	r = 255;
+	g = 255;
+	b = 255;
+}
+
+
+Color::Color(unsigned char _r, unsigned char _g, unsigned char _b) {
+	r = _r;
+	g = _g;
+	b = _b;
+}
+
+
+Color Color::HSV2RGB(float h, float s, float v) {
+	float c = s * v;
+	float h_ = h / 60.0;
+	h_ = h_ < 2 ? h_ : h_ - (float) 2*(((int)h_)/2);
+	float x = c * (1.0 - abs(h_ - 1.0));
+	float m = v - c;
+	float r, g, b;
+	if (h < 60) {
+		r = c;
+		g = x;
+		b = 0;
+	}
+	else if (h < 120) {
+		r = x;
+		g = c;
+		b = 0;
+	}
+	else if (h < 180) {
+		r = 0;
+		g = c;
+		b = x;
+	}
+	else if (h < 240) {
+		r = 0;
+		g = x;
+		b = c;
+	}
+	else if (h < 300) {
+		r = x;
+		g = 0;
+		b = c;
+	}
+	else if (h < 360) {
+		r = c;
+		g = 0;
+		b = x;
+	}
+	r = (r + m) * 255;
+	g = (g + m) * 255;
+	b = (b + m) * 255;
+
+	return Color((unsigned char) r, (unsigned char) g, (unsigned char) b);
+}
+
+
+// Palette
+Color Palette::palette[cfg::numColor];
+
+void Palette::createPalette() {
+	for (int i = 0; i < cfg::numColor; i++) {
+		srand(i);
+		float h = ((float)i) * 360.0 / (float)cfg::numColor;
+		float s = ((i + 1) % 2 == 0) ? 1 : 0.7;
+		float v = (i %  2 == 0) ? 0.9 : 0.4;
+		Color c = Color::HSV2RGB((int)h, s, v);
+		palette[i] = c;
+	}
+
+	// Shuffle them up
+	for (int i = 0; i < cfg::numColor; i++) {
+		srand(i);
+		int j = rand() % cfg::numColor;
+		Color c = palette[i];
+		palette[i] = palette[j];
+		palette[j] = c;
+	}
+}
+
+
 //TODO: Separate basic classes from scenario
 Point2D::Point2D() {
 	x = -1;

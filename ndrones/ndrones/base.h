@@ -22,7 +22,24 @@ enum Solver {ECLD_2D_DYNAMIC};
 class Agent;
 
 
+// Class to manage color, value range is 0-255
+class Color {
+public:
+	unsigned char r;
+	unsigned char g;
+	unsigned char b;
+	Color();
+	Color(unsigned char, unsigned char, unsigned char);
+	//static Color HSV2RGB(float h, float s, float v);
+	static Color HSV2RGB(float h, float s, float v);
+};
 
+
+class Palette {
+public:
+	static Color palette[cfg::numColor];
+	static void createPalette();
+};
 
 
 // Basic 2D point class
