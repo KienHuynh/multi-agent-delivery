@@ -63,10 +63,11 @@ Color Color::HSV2RGB(float h, float s, float v) {
 
 // Palette
 Color Palette::palette[cfg::numColor];
+Color Palette::huePalette[cfg::numColor];
 
 void Palette::createPalette() {
+	// Create the random palette
 	for (int i = 0; i < cfg::numColor; i++) {
-		srand(i);
 		float h = ((float)i) * 360.0 / (float)cfg::numColor;
 		float s = ((i + 1) % 2 == 0) ? 1 : 0.7;
 		float v = (i %  2 == 0) ? 0.9 : 0.4;
@@ -81,6 +82,15 @@ void Palette::createPalette() {
 		Color c = palette[i];
 		palette[i] = palette[j];
 		palette[j] = c;
+	}
+
+	// Create the hue palette
+	for (int i = 0; i < cfg::numColor; i++) {
+		float h = ((float)i) * 360.0 / (float)cfg::numColor;
+		float s = 0.8;
+		float v = 0.7;
+		Color c = Color::HSV2RGB((int)h, s, v);
+		huePalette[i] = c;
 	}
 }
 

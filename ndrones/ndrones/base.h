@@ -38,6 +38,7 @@ public:
 class Palette {
 public:
 	static Color palette[cfg::numColor];
+	static Color huePalette[cfg::numColor];
 	static void createPalette();
 };
 
