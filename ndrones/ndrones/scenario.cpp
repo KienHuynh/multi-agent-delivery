@@ -257,6 +257,12 @@ Color Scenario::agentColorMap(Agent agent) {
 }
 
 
+Color Scenario::bestTimeColorMap(float s, float l, float t) {
+	int paletteIndex = (int)(t * cfg::numColor / (l - s));
+	return Palette::huePalette[paletteIndex];
+}
+
+
 Color Scenario::depotColorMap(DesignatedPoint dp) {
 	srand(dp.ID*(int)dp.loc.x+(int)dp.loc.y);
 	int x = rand() % cfg::numColor;

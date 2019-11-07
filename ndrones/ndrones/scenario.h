@@ -105,18 +105,25 @@ public:
 	bool isDesignatedPoint(PointState ps);
 
 	// Mapping from list of agents to some predefined colors
-	// @parm[in] std::vector<Agent> agents
-	// @parm[out] Color
+	// @param[in] std::vector<Agent> agents
+	// @return Color
 	static Color agentQueueColorMap(std::vector<Agent>);
 
 	// Mapping from agent to some predefined colors
-	// @parm[in] Agent agent
-	// @parm[out] Color
+	// @param[in] Agent agent
+	// @return Color
 	static Color agentColorMap(Agent);
 
+	// Mapping from best time to some predefined colors
+	// @param [in] float s shortest time
+	// @param [in] float l longest time
+	// @param [in] float t some time in-between
+	// @return Color color
+	static Color bestTimeColorMap(float s, float l, float t);
+
 	// Mapping from depot to some predefined colors
-	// @parm[in] DesignatedPoint dp
-	// @parm[out] Color
+	// @param[in] DesignatedPoint dp
+	// @param[out] Color
 	static Color depotColorMap(DesignatedPoint);
 
 
