@@ -88,6 +88,9 @@ public:
 	float bestTime;
 
 	PointState(Point2D _p);
+
+	// Compare if the bestTime (so far) of point a is less than point b
+	static bool bestTimeLT(PointState, PointState);
 };
 
 

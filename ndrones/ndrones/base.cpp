@@ -163,6 +163,11 @@ bool Point2D::operator == (Point2D const &obj) {
 }
 
 
+bool PointState::bestTimeLT(PointState a, PointState b) {
+	return a.bestTime < b.bestTime;
+}
+
+
 PointState::PointState(Point2D _p) {
 	p = _p;
 	bestTime = -1;
