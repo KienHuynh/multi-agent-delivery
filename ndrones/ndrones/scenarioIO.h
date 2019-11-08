@@ -7,6 +7,7 @@ enum ProblemType;
 enum DesignatedPointInputMode;
 
 enum SamplingMethod {
+	UNSPECIFIED = 0,
 	GRID = 1,
 	CIRCULAR = 2
 };
@@ -54,4 +55,15 @@ public:
 		std::vector<DesignatedPoint> &dPpoints,
 		Scenario &scenario,
 		int nDPoint);
+
+private:
+	// Generate points using grid scheme
+	// @param[out] std::ifstream &myfile.
+	// @param[out] Scenario scenario, storing the points.
+	static void generateGrid(std::ifstream &myfile, Scenario&);
+
+	// Generate points using circular grid scheme
+	// @param[out] std::ifstream &myfile.
+	// @param[out] Scenario scenario, storing the points
+	static void generateCircularGrid(std::ifstream &myfile, Scenario&);
 };

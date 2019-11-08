@@ -26,6 +26,16 @@ std::istream& operator >> (std::istream &input, ProblemType& p) {
 }
 
 
+std::istream& operator >> (std::istream &input, SamplingMethod& p) {
+	std::string tmp;
+	input >> tmp;
+	if (stringEqual(tmp, "grid")) p = GRID;
+	if (stringEqual(tmp, "circular")) p = CIRCULAR;
+
+	return input;
+}
+
+
 void ScenarioIO::loadDesignatedPoint(
 	std::ifstream &myfile,
 	std::vector<DesignatedPoint> &dPoints,
@@ -132,24 +142,12 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	std::istringstream ss(str);
 
 	ProblemType tmp;
+	SamplingMethod sm = UNSPECIFIED;
 	while (ss >> tmp) {
 		scenario.problemType = (ProblemType)(scenario.problemType | tmp);
 	}
 
 	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
-	float stepX, stepY;
-	myfile >> scenario.minX >> scenario.maxX >> stepX >> scenario.minY >> scenario.maxY >> stepY;
-
-	// TODO: Make this more efficient
-	// Add points to the grid
-	if (cfg::stepX > 0) stepX = cfg::stepX;
-	if (cfg::stepY > 0) stepY = cfg::stepY;
-
-	for (float i = scenario.minX; i < scenario.maxX; i += stepX) {
-		for (float j = scenario.minY; j < scenario.maxY; j += stepY) {
-			scenario.points.push_back(PointState(Point2D(i, j)));
-		}
-	}
 
 	myfile >> scenario.packageInputMode;
 	myfile >> nPackage;
@@ -192,6 +190,16 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	}
 	// Sort the agents by speed
 	std::sort(scenario.agents.begin(), scenario.agents.end());
+
+	// TODO: Make this more efficient
+	// Add points to the grid
+	myfile >> sm;
+	if (sm == SamplingMethod::GRID) {
+		generateGrid(myfile, scenario);
+	}
+	if (sm == SamplingMethod::CIRCULAR) {
+		generateCircularGrid(myfile, scenario);
+	}
 }
 
 
@@ -218,4 +226,78 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 	}
 
 	myfile.close();
+}
+
+// TODO: Don't generate points outside of the convex hull (?) for both grid method
+void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
+	float stepX, stepY;
+	myFile >> scenario.minX >> scenario.maxX >> stepX >> scenario.minY >> scenario.maxY >> stepY;
+	if (cfg::stepX > 0) stepX = cfg::stepX;
+	if (cfg::stepY > 0) stepY = cfg::stepY;
+
+	for (float i = scenario.minX; i < scenario.maxX; i += stepX) {
+		for (float j = scenario.minY; j < scenario.maxY; j += stepY) {
+			scenario.points.push_back(PointState(Point2D(i, j)));
+		}
+	}
+}
+
+
+void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario) {
+	float theta;
+	float nR;
+	myFile >> theta >> nR;
+	if (cfg::theta > 0) theta = cfg::theta;
+	if (cfg::nR > 0) nR = cfg::nR;
+
+	// Compare pairwise distance of every relevant pairs
+	// TODO: if there might be more pairs, use the O(nlogn) algorithm
+	float longestDis = 0;
+	for (auto agent : scenario.agents) {
+		for (auto target : scenario.targets) {
+			if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
+				longestDis = Point2D::l2Distance(agent.loc, target.loc);
+		}
+		for (auto package : scenario.packages) {
+			if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
+				longestDis = Point2D::l2Distance(agent.loc, package.loc);
+		}
+	}
+	for (auto package : scenario.packages) {
+		for (auto target : scenario.targets) {
+			if (longestDis < Point2D::l2Distance(package.loc, target.loc))
+				longestDis = Point2D::l2Distance(package.loc, target.loc);
+		}
+	}
+	float r = longestDis / nR;
+
+	std::vector<Point2D> centerList;
+	for (auto agent : scenario.agents) {
+		centerList.push_back(agent.loc);
+	}
+	for (auto package : scenario.packages) {
+		centerList.push_back(package.loc);
+	}
+	for (auto target : scenario.targets) {
+		centerList.push_back(target.loc);
+	}
+
+	scenario.minX = centerList[0].x;
+	scenario.minY = centerList[0].y;
+	scenario.maxX = centerList[0].x;
+	scenario.maxY = centerList[0].y;
+	for (auto center : centerList) {
+		for (float theta_i = 0; theta_i < 360; theta_i += theta) {
+			for (float r_i = r; r_i < (longestDis + r); r_i += r) {
+				float x = cos(theta_i * PI / 180.0)*r_i + center.x;
+				float y = sin(theta_i * PI / 180.0)*r_i + center.y;
+				scenario.points.push_back(Point2D(x, y));
+
+				if (x < scenario.minX) scenario.minX = x;
+				if (x > scenario.maxX) scenario.maxX = x;
+				if (y < scenario.minY) scenario.minY = y;
+				if (y > scenario.maxY) scenario.maxY = y;
+			}
+		}
+	}
 }
