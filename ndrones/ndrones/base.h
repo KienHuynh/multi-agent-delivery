@@ -14,6 +14,7 @@
 #include "config.h"
 #include "util.h"
 
+constexpr auto PI = 3.14156;
 
 enum Solver {ECLD_2D_DYNAMIC};
 
