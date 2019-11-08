@@ -227,6 +227,9 @@ private:
 	int findVectorIndexWithID(std::vector<Agent> _agents, Agent a);
 	// Given a vector of agents _agents, find the location of Agent a in _agents, using its ID and delayTime
 	int findVectorIndexFull(std::vector<Agent> _agents, Agent a);
+	// Given a vector of PointState, find the index of the ele with bestTime equal to a.bestTime
+	// WARNING: LIST MUST BE SORTED
+	int findVectorIndexWithBestTime(std::vector<PointState> _points, PointState p);
 
 	// Remove any agents in _agents if it also exists in queues[i]
 	// However, if i == id, then no one will be removed

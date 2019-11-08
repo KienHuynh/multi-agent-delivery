@@ -90,22 +90,30 @@ void Scenario::ecld2DType0DynamicNMCommon(
 		_points[i].bestTime = bestTime;
 		_points[i].pointQueue.push_back(_points[bestPackageID].p);
 	}
-
+	
 	for (int k = 1; k < _agents.size(); k++) {
 		std::cout << k << std::endl;
 		std::vector<PointState> pointsCopy = _points;
+		
+		// Sort the pointsCopy by their best time
+		std::sort(pointsCopy.begin(), pointsCopy.end(), PointState::bestTimeLT);
+
 		for (int i = 0; i < _points.size(); i++) {
 			if (isPackage(i, _packages)) continue;
+
+			// Find index of point i in the sorted list
+			// int sorted_i = findVectorIndexWithBestTime(pointsCopy, _points[i]);
 
 			int best_j = -1;
 			// Find the best handoff point j so that it can travel to i in the shortest time
 			for (int j = 0; j < pointsCopy.size(); j++) {
+				if (pointsCopy[j].bestTime > _points[i].bestTime) break;
 
 				float timeTo_j = _agents[k].timing(pointsCopy[j].p) + _agents[k].delay;
 				// Factor in waiting time
 				timeTo_j = max(timeTo_j, pointsCopy[j].bestTime);
 
-				float time_jTo_i = _agents[k].timing(pointsCopy[j].p, pointsCopy[i].p);
+				float time_jTo_i = _agents[k].timing(pointsCopy[j].p, _points[i].p);
 				if (timeTo_j + time_jTo_i < _points[i].bestTime) {
 					_points[i].bestTime = timeTo_j + time_jTo_i;
 					best_j = j;
@@ -416,6 +424,25 @@ int Scenario::findVectorIndexFull(std::vector<Agent> _agents, Agent a) {
 		if (_agents[k].ID == a.ID &&
 			_agents[k].delay == a.delay &&
 			_agents[k].orderOfEx == a.orderOfEx) return k;
+	}
+	return -1;
+}
+
+
+int Scenario::findVectorIndexWithBestTime(std::vector<PointState> _points, PointState p) {
+	int min_i = 0;
+	int max_i = points.size();
+	int i = -1;
+	while (min_i != max_i) {
+		i = (min_i + max_i) / 2;
+		if (_points[i].bestTime == p.bestTime) return i;
+		if (_points[i].bestTime < p.bestTime) {
+			min_i = i;
+		}
+		else {
+			max_i = i;
+		}
+		if (min_i == max_i) return i;
 	}
 	return -1;
 }
