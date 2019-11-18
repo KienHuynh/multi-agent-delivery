@@ -1,6 +1,4 @@
 problem_type // Problem info, refer to ProblemType enum for more info
-start_x end_x sampling_step // Sampling
-start_y end_y sampling_step
 input_point_type // SINGLE_POINT or POLY
 num_point // Package (s) info
 x1 y1 id1
@@ -15,6 +13,10 @@ num_agent
 x1 y1 v1
 x2 y2 v2
 ... // num_agent
+sampling_method // For discrete problem: CIRCULAR or GRID
+start_x end_x sampling_step // If GRID
+start_y end_y sampling_step // If GRID
+nR theta // If CIRCULAR
 
 =========================================================
 problem_type
