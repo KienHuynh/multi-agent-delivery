@@ -29,6 +29,7 @@ std::istream& operator >> (std::istream &input, ProblemType& p) {
 std::istream& operator >> (std::istream &input, SamplingMethod& p) {
 	std::string tmp;
 	input >> tmp;
+	if (stringEqual(tmp, "apgrid")) p = APGRID;
 	if (stringEqual(tmp, "grid")) p = GRID;
 	if (stringEqual(tmp, "circular")) p = CIRCULAR;
 
@@ -194,6 +195,9 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	// TODO: Make this more efficient
 	// Add points to the grid
 	myfile >> sm;
+	if (sm == SamplingMethod::APGRID) {
+		generateAPGrid(myfile, scenario);
+	}
 	if (sm == SamplingMethod::GRID) {
 		generateGrid(myfile, scenario);
 	}
@@ -229,7 +233,7 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 }
 
 // TODO: Don't generate points outside of the convex hull (?) for both grid method
-void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
+void ScenarioIO::generateAPGrid(std::ifstream &myFile, Scenario& scenario) {
 	float stepX, stepY;
 	myFile >> scenario.minX >> scenario.maxX >> stepX >> scenario.minY >> scenario.maxY >> stepY;
 	if (cfg::stepX > 0) stepX = cfg::stepX;
@@ -243,11 +247,64 @@ void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
 }
 
 
+void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
+	int nH, nW;
+	myFile >> nH >> nW;
+	
+	float stDistance = Point2D::l2Distance(scenario.packages[0].loc, scenario.targets[0].loc);
+	float longestDis = 0;
+	for (auto agent : scenario.agents) {
+		for (auto target : scenario.targets) {
+			if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
+				longestDis = Point2D::l2Distance(agent.loc, target.loc);
+		}
+		for (auto package : scenario.packages) {
+			if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
+				longestDis = Point2D::l2Distance(agent.loc, package.loc);
+		}
+	}
+	for (auto package : scenario.packages) {
+		for (auto target : scenario.targets) {
+			if (longestDis < Point2D::l2Distance(package.loc, target.loc))
+				longestDis = Point2D::l2Distance(package.loc, target.loc);
+		}
+	}
+
+	Point2D s = scenario.packages[0].loc;
+	Point2D t = scenario.targets[0].loc;
+	Point2D v = (t - s) / Point2D::l2norm(t - s);
+	float theta = atan(v.y / v.x); // For grid rotation
+	float y0 = -longestDis;
+	float x0 = 0;
+	scenario.minX = s.x;
+	scenario.minY = s.y;
+	scenario.maxX = s.x;
+	scenario.maxY = s.y;
+	for (int i = 0; i < nH; i++) {
+		for (int j = 0; j < nW; j++) {
+			float x1 = x0 + ((float)j / (float)(nW-1)) * stDistance;
+			float y1 = y0 + ((float)i / (float)nH) * 2 * longestDis;
+			float x, y;
+			// Rotate & Translate
+			x = cos(theta)*x1 - sin(theta)*y1 + s.x;
+			y = sin(theta)*x1 + cos(theta)*y1 + s.y;
+			scenario.points.push_back(Point2D(x, y));
+
+			if (x < scenario.minX) scenario.minX = x;
+			if (x > scenario.maxX) scenario.maxX = x;
+			if (y < scenario.minY) scenario.minY = y;
+			if (y > scenario.maxY) scenario.maxY = y;
+		}
+		std::cout << std::endl;
+	}
+}
+
+
 void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario) {
-	float theta;
+	float nTheta;
 	float nR;
-	myFile >> theta >> nR;
-	if (cfg::theta > 0) theta = cfg::theta;
+	myFile >> nTheta >> nR;
+	if (cfg::nTheta > 0) nTheta = cfg::nTheta;
 	if (cfg::nR > 0) nR = cfg::nR;
 
 	// Compare pairwise distance of every relevant pairs
@@ -286,8 +343,10 @@ void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario)
 	scenario.minY = centerList[0].y;
 	scenario.maxX = centerList[0].x;
 	scenario.maxY = centerList[0].y;
+	
+	float dTheta = 360.0 / (float)nTheta;
 	for (auto center : centerList) {
-		for (float theta_i = 0; theta_i < 360; theta_i += theta) {
+		for (float theta_i = 0; theta_i < 360; theta_i += dTheta) {
 			for (float r_i = r; r_i < (longestDis + r); r_i += r) {
 				float x = cos(theta_i * PI / 180.0)*r_i + center.x;
 				float y = sin(theta_i * PI / 180.0)*r_i + center.y;

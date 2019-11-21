@@ -8,8 +8,10 @@ enum DesignatedPointInputMode;
 
 enum SamplingMethod {
 	UNSPECIFIED = 0,
-	GRID = 1,
-	CIRCULAR = 2
+	APGRID = 1,
+	GRID = 2,
+	RECTUNION = 3,
+	CIRCULAR = 4
 };
 
 // Some operators to make life easier
@@ -57,7 +59,13 @@ public:
 		int nDPoint);
 
 private:
-	// Generate points using grid scheme
+	// Generate points using grid scheme. This grid is axis parallel.
+	// @param[out] std::ifstream &myfile.
+	// @param[out] Scenario scenario, storing the points.
+	static void generateAPGrid(std::ifstream &myfile, Scenario&);
+
+	// Generate points using a better grid scheme.
+	// This grid is limited to the union of package-target strips.
 	// @param[out] std::ifstream &myfile.
 	// @param[out] Scenario scenario, storing the points.
 	static void generateGrid(std::ifstream &myfile, Scenario&);
@@ -66,4 +74,6 @@ private:
 	// @param[out] std::ifstream &myfile.
 	// @param[out] Scenario scenario, storing the points
 	static void generateCircularGrid(std::ifstream &myfile, Scenario&);
+
+	//static void create
 };
