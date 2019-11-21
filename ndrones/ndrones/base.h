@@ -5,6 +5,7 @@
 
 #pragma once
 #include <vector>
+#include <set>
 #include <algorithm>
 #include <fstream>
 #include <cmath>
@@ -53,7 +54,7 @@ public:
 	Point2D();
 	Point2D(float, float);
 
-	void copy(Point2D);
+	void copyFrom(Point2D);
 
 	// Compute L2 distance
 	static float l2Distance(Point2D, Point2D);
