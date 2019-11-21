@@ -11,7 +11,7 @@ namespace cfg {
 	const float stepX = -1;
 	const float stepY = -1;
 	// Circular grid parameters
-	const float theta = -1;
+	const float nTheta = -1;
 	const float nR = -1;
 
 	// Number of colors for the palette
