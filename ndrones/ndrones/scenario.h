@@ -57,8 +57,10 @@ public:
 	float timer;
 	bool aniStart;
 
-	// The grid.
+	// The set of discrete points.
 	std::vector<PointState> points;
+	// The edge list for all of the points above
+	std::vector<std::set<int>> edgeList;
 	// Store the packages.
 	std::vector<DesignatedPoint> packages;
 	// Store the targets.
