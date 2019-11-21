@@ -58,7 +58,7 @@ public:
 
 	// Compute L2 distance
 	static float l2Distance(Point2D, Point2D);
-	static float abs(Point2D);
+	static float l2norm(Point2D);
 
 	Point2D operator + (Point2D const &obj);
 	Point2D operator - (Point2D const &obj);

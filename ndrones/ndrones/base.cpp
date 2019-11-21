@@ -114,7 +114,7 @@ float Point2D::l2Distance(Point2D a, Point2D b) {
 }
 
 
-float Point2D::abs(Point2D a) {
+float Point2D::l2norm(Point2D a) {
 	return sqrt(a.x*a.x + a.y*a.y);
 }
 
