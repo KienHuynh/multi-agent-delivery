@@ -32,6 +32,7 @@ std::istream& operator >> (std::istream &input, SamplingMethod& p) {
 	if (stringEqual(tmp, "apgrid")) p = APGRID;
 	if (stringEqual(tmp, "grid")) p = GRID;
 	if (stringEqual(tmp, "circular")) p = CIRCULAR;
+	if (stringEqual(tmp, "loggrid")) p = LOGGRID;
 
 	return input;
 }
@@ -204,6 +205,9 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	if (sm == SamplingMethod::CIRCULAR) {
 		generateCircularGrid(myfile, scenario);
 	}
+	if (sm == SamplingMethod::LOGGRID) {
+		generateLogGrid(myfile, scenario);
+	}
 }
 
 
@@ -357,6 +361,66 @@ void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario)
 				if (y < scenario.minY) scenario.minY = y;
 				if (y > scenario.maxY) scenario.maxY = y;
 			}
+		}
+	}
+}
+
+
+void ScenarioIO::generateLogGrid(std::ifstream &myFile, Scenario& scenario) {
+	int nH, nW;
+	float f;
+	myFile >> nH >> nW >> f;
+
+	float stDistance = Point2D::l2Distance(scenario.packages[0].loc, scenario.targets[0].loc);
+	float longestDis = 0;
+	for (auto agent : scenario.agents) {
+		for (auto target : scenario.targets) {
+			if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
+				longestDis = Point2D::l2Distance(agent.loc, target.loc);
+		}
+		for (auto package : scenario.packages) {
+			if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
+				longestDis = Point2D::l2Distance(agent.loc, package.loc);
+		}
+	}
+
+	for (auto package : scenario.packages) {
+		for (auto target : scenario.targets) {
+			if (longestDis < Point2D::l2Distance(package.loc, target.loc))
+				longestDis = Point2D::l2Distance(package.loc, target.loc);
+		}
+	}
+
+	Point2D s = scenario.packages[0].loc;
+	Point2D t = scenario.targets[0].loc;
+	Point2D v = (t - s) / Point2D::l2norm(t - s);
+	float theta = atan(v.y / v.x); // For grid rotation
+	float y0 = 0;
+	float x0 = 0;
+	scenario.minX = s.x;
+	scenario.minY = s.y;
+	scenario.maxX = s.x;
+	scenario.maxY = s.y;
+	
+	for (int j = 0; j < nW; j++) {
+		bool stop = false;
+		for (int i = -nH/2; i <= nH /2; i++) {
+			float x1 = x0 + ((float)j / (float)(nW - 1)) * stDistance;
+			float y1 = 0;
+			if (i != 0) y1 = y0 + (i/abs(i)) * ((1-pow(f,abs(i)-1)) / (1-f)) / (float)nH * longestDis;
+			
+			if (abs(y1) > longestDis) continue;
+			
+			float x, y;
+			// Rotate & Translate
+			x = cos(theta)*x1 - sin(theta)*y1 + s.x;
+			y = sin(theta)*x1 + cos(theta)*y1 + s.y;
+			scenario.points.push_back(Point2D(x, y));
+
+			if (x < scenario.minX) scenario.minX = x;
+			if (x > scenario.maxX) scenario.maxX = x;
+			if (y < scenario.minY) scenario.minY = y;
+			if (y > scenario.maxY) scenario.maxY = y;
 		}
 	}
 }
