@@ -13,10 +13,10 @@ num_agent
 x1 y1 v1
 x2 y2 v2
 ... // num_agent
-sampling_method // For discrete problem: CIRCULAR, APGRID or GRID
+sampling_method // For discrete problem: CIRCULAR, APGRID, GRID, LOGGRID
 nH nW // If GRID
 nTheta nR // If CIRCULAR
-f nW // If LOGGRID
+nH nW f // If LOGGRID
 
 =========================================================
 problem_type
