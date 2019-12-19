@@ -14,8 +14,9 @@ x1 y1 v1
 x2 y2 v2
 ... // num_agent
 sampling_method // For discrete problem: CIRCULAR, APGRID or GRID
-nY nX // If GRID
+nH nW // If GRID
 nTheta nR // If CIRCULAR
+f nW // If LOGGRID
 
 =========================================================
 problem_type
@@ -34,8 +35,11 @@ id - Only used if problem_type=1. This is so that we can match which package to 
 
 sampling_method
 GRID - Create data along a grid, rotated by the angle of (0x, s-t line)
-nY: number of steps to sample from min_y to max_y (rotated along s-t line)
-nX: number of steps to sample from min_x to max_x (rotated along s-t line)
+nH: number of steps to sample from min_y to max_y (rotated along s-t line)
+nW: number of steps to sample from s to t (rotated along s-t line)
 CIRCULAR - Create circular data points centering around the designated points, nTheta * nR in total
 nTheta: number of angles to sample (e.g., nTheta = 4 means sampling with theta = 0, 90, 180, 270)
 nR: number of times to sample along the radius at each theta
+LOGGRID - Create an s-t aligned grid but as the points go further from s-t, the spacing is increased with a factor of f
+f: increasing factor
+nW: number of steps to sample from s to t (rotated along s-t line)
