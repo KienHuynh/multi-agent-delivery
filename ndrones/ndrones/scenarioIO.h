@@ -6,12 +6,18 @@ class Scenario;
 enum ProblemType;
 enum DesignatedPointInputMode;
 
+// APGRID: axis-parallel grid
+// GRID: s-t aligned grid
+// RECTUNION: union of rectangles
+// CIRCULAR: circular sampling method
+// LOGGRID: s-t aligned log grid
 enum SamplingMethod {
 	UNSPECIFIED = 0,
 	APGRID = 1,
 	GRID = 2,
 	RECTUNION = 3,
-	CIRCULAR = 4
+	CIRCULAR = 4,
+	LOGGRID = 5
 };
 
 // Some operators to make life easier
@@ -75,5 +81,8 @@ private:
 	// @param[out] Scenario scenario, storing the points
 	static void generateCircularGrid(std::ifstream &myfile, Scenario&);
 
-	//static void create
+	// Generate points using log grid scheme
+	// @param[out] std::ifstream &myfile.
+	// @param[out] Scenario scenario, storing the points
+	static void generateLogGrid(std::ifstream &myfile, Scenario&);
 };
