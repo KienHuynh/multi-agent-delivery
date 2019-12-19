@@ -84,6 +84,8 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 	fprintf(stderr, "    VALUE: '%s'\n", G_chooser->value());
 	fprintf(stderr, "    COUNT: %d files selected\n", G_chooser->count());
 	fprintf(stderr, "--------------------\n");
+
+	Canvas::scenario.writeSolution(G_chooser->value());
 }
 
 
