@@ -8,6 +8,7 @@ import random
 
 import os
 
+
 def generate(save_path,
         problem_type,
         desginated_point_type,
@@ -30,11 +31,12 @@ def generate(save_path,
     scale_factor = 1
     
     for i in range(1, ndrone):
+        break_time = 1
         while True:
             drone_loc = np.random.rand(2)*max_range*scale_factor
             drone_speed = speeds[i]
             time_to_s_i = np.sqrt(np.sum((drone_loc - s)**2))/drone_speed
-            if (time_to_s_i < time_to_s):
+            if (time_to_s_i < time_to_s and break_time <= 10):
                 scale_factor *= 1.05
             else:
                 drones[i,0:2] = drone_loc
@@ -42,12 +44,14 @@ def generate(save_path,
                 time_to_s = time_to_s_i
                 #print(drones[i,:])
                 break
+            break_time += 1
     
     with open(save_path, 'w') as f:
         f.write(problem_type + '\n')
         f.write(desginated_point_type + '\n')
         f.write('1\n')
         f.write('%d %d\n' % (s[0], s[1]))
+        f.write(desginated_point_type + '\n')
         f.write('1\n')
         f.write('%d %d\n' % (t[0], t[1]))
         f.write(str(ndrone) + '\n')
