@@ -1,22 +1,22 @@
-problem_type // Problem info, refer to ProblemType enum for more info
-input_point_type // SINGLE_POINT or POLY
-num_point // Package (s) info
+problem_type		// Problem info, refer to ProblemType enum for more info
+input_point_type	// SINGLE_POINT or POLY
+num_point			// Package (s) info
 x1 y1 id1
 x2 y2 id2
-... // num_point
-input_point_type // SINGLE_POINT or POLY
-num_point // Target (s) info
+...					// num_point
+input_point_type	// SINGLE_POINT or POLY
+num_point			// Target (s) info
 x1 y1 id1
 x2 y2 id2
-... // num_point
+...					// num_point
 num_agent
 x1 y1 v1
 x2 y2 v2
-... // num_agent
-sampling_method // For discrete problem: CIRCULAR, APGRID, GRID, LOGGRID
-nH nW // If GRID
-nTheta nR // If CIRCULAR
-nH nW f // If LOGGRID
+...					// num_agent
+sampling_method		// For discrete problem: CIRCULAR, APGRID, GRID, LOGGRID
+nH nW				// If GRID
+nTheta nR			// If CIRCULAR
+nH nW f				// If LOGGRID
 
 =========================================================
 problem_type
@@ -35,11 +35,12 @@ id - Only used if problem_type=1. This is so that we can match which package to 
 
 sampling_method
 GRID - Create data along a grid, rotated by the angle of (0x, s-t line)
-nH: number of steps to sample from min_y to max_y (rotated along s-t line)
+nH: number of steps to sample from min_y to max_y (rotated to be perpendicular to the s-t line)
 nW: number of steps to sample from s to t (rotated along s-t line)
 CIRCULAR - Create circular data points centering around the designated points, nTheta * nR in total
 nTheta: number of angles to sample (e.g., nTheta = 4 means sampling with theta = 0, 90, 180, 270)
 nR: number of times to sample along the radius at each theta
 LOGGRID - Create an s-t aligned grid but as the points go further from s-t, the spacing is increased with a factor of f
-f: increasing factor
+nH: number of steps to sample from min_y to max_y (rotated to be perpendicular to the s-t line)
 nW: number of steps to sample from s to t (rotated along s-t line)
+f: increasing factor
