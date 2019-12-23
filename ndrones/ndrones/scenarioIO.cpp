@@ -216,12 +216,12 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 	myfile.open(outputFile);
 
 	myfile << scenario.overallTime << std::endl;
+	myfile << scenario.points.size() << std::endl;
 	for (int a = 0; a < scenario.activeID.size(); a++) {
 		int pairID = scenario.activeID[a];
 		myfile << pairID << " " << scenario.bestTimes[a] << std::endl;
 		myfile << scenario.bestAgentQueues[a].size() << std::endl;
 		for (int k = 0; k < scenario.bestAgentQueues[a].size(); k++) {
-			std::cout << "";
 			myfile << scenario.bestAgentQueues[a][k].loc0.x << " " << 
 				scenario.bestAgentQueues[a][k].loc0.y << " " <<
 				scenario.bestAgentQueues[a][k].v << std::endl;
