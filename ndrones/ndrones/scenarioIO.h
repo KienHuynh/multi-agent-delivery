@@ -34,7 +34,7 @@ public:
 
 	// Write solution to a file.
 	// @param[in] const char* fileName.
-	// @param[in] Sceanrio scenario.
+	// @param[out] Sceanrio scenario.
 	static void writeSolution(const char* outputFile, Scenario scenario);
 
 	// This is used to load target points or package points.

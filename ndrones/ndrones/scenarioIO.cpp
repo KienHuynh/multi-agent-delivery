@@ -189,6 +189,7 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 
 		Agent a(i, x, y, v);
 		scenario.agents.push_back(a);
+		scenario.updateMinMaxXY(x, y);
 	}
 	// Sort the agents by speed
 	std::sort(scenario.agents.begin(), scenario.agents.end());
@@ -253,26 +254,32 @@ void ScenarioIO::generateAPGrid(std::ifstream &myFile, Scenario& scenario) {
 
 void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
 	int nH, nW;
-	myFile >> nH >> nW;
-	
-	float stDistance = Point2D::l2Distance(scenario.packages[0].loc, scenario.targets[0].loc);
+	float maxY;
+	myFile >> nH >> nW >> maxY;
 	float longestDis = 0;
-	for (auto agent : scenario.agents) {
-		for (auto target : scenario.targets) {
-			if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
-				longestDis = Point2D::l2Distance(agent.loc, target.loc);
+	float stDistance = Point2D::l2Distance(scenario.packages[0].loc, scenario.targets[0].loc);
+	if (maxY <= 0) {
+		for (auto agent : scenario.agents) {
+			for (auto target : scenario.targets) {
+				if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
+					longestDis = Point2D::l2Distance(agent.loc, target.loc);
+			}
+			for (auto package : scenario.packages) {
+				if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
+					longestDis = Point2D::l2Distance(agent.loc, package.loc);
+			}
 		}
 		for (auto package : scenario.packages) {
-			if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
-				longestDis = Point2D::l2Distance(agent.loc, package.loc);
+			for (auto target : scenario.targets) {
+				if (longestDis < Point2D::l2Distance(package.loc, target.loc))
+					longestDis = Point2D::l2Distance(package.loc, target.loc);
+			}
 		}
 	}
-	for (auto package : scenario.packages) {
-		for (auto target : scenario.targets) {
-			if (longestDis < Point2D::l2Distance(package.loc, target.loc))
-				longestDis = Point2D::l2Distance(package.loc, target.loc);
-		}
+	else {
+		longestDis = maxY;
 	}
+	
 
 	Point2D s = scenario.packages[0].loc;
 	Point2D t = scenario.targets[0].loc;
@@ -280,10 +287,8 @@ void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
 	float theta = atan(v.y / v.x); // For grid rotation
 	float y0 = -longestDis;
 	float x0 = 0;
-	scenario.minX = s.x;
-	scenario.minY = s.y;
-	scenario.maxX = s.x;
-	scenario.maxY = s.y;
+	scenario.updateMinMaxXY(s.x, s.y);
+
 	for (int i = 0; i < nH; i++) {
 		for (int j = 0; j < nW; j++) {
 			float x1 = x0 + ((float)j / (float)(nW-1)) * stDistance;
@@ -293,11 +298,7 @@ void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
 			x = cos(theta)*x1 - sin(theta)*y1 + s.x;
 			y = sin(theta)*x1 + cos(theta)*y1 + s.y;
 			scenario.points.push_back(Point2D(x, y));
-
-			if (x < scenario.minX) scenario.minX = x;
-			if (x > scenario.maxX) scenario.maxX = x;
-			if (y < scenario.minY) scenario.minY = y;
-			if (y > scenario.maxY) scenario.maxY = y;
+			scenario.updateMinMaxXY(x, y);
 		}
 		std::cout << std::endl;
 	}
@@ -343,10 +344,7 @@ void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario)
 		centerList.push_back(target.loc);
 	}
 
-	scenario.minX = centerList[0].x;
-	scenario.minY = centerList[0].y;
-	scenario.maxX = centerList[0].x;
-	scenario.maxY = centerList[0].y;
+	scenario.updateMinMaxXY(centerList[0].x, centerList[0].y);
 	
 	float dTheta = 360.0 / (float)nTheta;
 	for (auto center : centerList) {
@@ -355,11 +353,7 @@ void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario)
 				float x = cos(theta_i * PI / 180.0)*r_i + center.x;
 				float y = sin(theta_i * PI / 180.0)*r_i + center.y;
 				scenario.points.push_back(Point2D(x, y));
-
-				if (x < scenario.minX) scenario.minX = x;
-				if (x > scenario.maxX) scenario.maxX = x;
-				if (y < scenario.minY) scenario.minY = y;
-				if (y > scenario.maxY) scenario.maxY = y;
+				scenario.updateMinMaxXY(x, y);
 			}
 		}
 	}
@@ -368,27 +362,31 @@ void ScenarioIO::generateCircularGrid(std::ifstream &myFile, Scenario& scenario)
 
 void ScenarioIO::generateLogGrid(std::ifstream &myFile, Scenario& scenario) {
 	int nH, nW;
-	float f;
-	myFile >> nH >> nW >> f;
-
-	float stDistance = Point2D::l2Distance(scenario.packages[0].loc, scenario.targets[0].loc);
+	float f, maxY;
+	myFile >> nH >> nW >> f >> maxY;
 	float longestDis = 0;
-	for (auto agent : scenario.agents) {
-		for (auto target : scenario.targets) {
-			if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
-				longestDis = Point2D::l2Distance(agent.loc, target.loc);
+	float stDistance = Point2D::l2Distance(scenario.packages[0].loc, scenario.targets[0].loc);
+	if (maxY <= 0) {
+		for (auto agent : scenario.agents) {
+			for (auto target : scenario.targets) {
+				if (longestDis < Point2D::l2Distance(agent.loc, target.loc))
+					longestDis = Point2D::l2Distance(agent.loc, target.loc);
+			}
+			for (auto package : scenario.packages) {
+				if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
+					longestDis = Point2D::l2Distance(agent.loc, package.loc);
+			}
 		}
+
 		for (auto package : scenario.packages) {
-			if (longestDis < Point2D::l2Distance(agent.loc, package.loc))
-				longestDis = Point2D::l2Distance(agent.loc, package.loc);
+			for (auto target : scenario.targets) {
+				if (longestDis < Point2D::l2Distance(package.loc, target.loc))
+					longestDis = Point2D::l2Distance(package.loc, target.loc);
+			}
 		}
 	}
-
-	for (auto package : scenario.packages) {
-		for (auto target : scenario.targets) {
-			if (longestDis < Point2D::l2Distance(package.loc, target.loc))
-				longestDis = Point2D::l2Distance(package.loc, target.loc);
-		}
+	else {
+		longestDis = maxY;
 	}
 
 	Point2D s = scenario.packages[0].loc;
@@ -397,10 +395,7 @@ void ScenarioIO::generateLogGrid(std::ifstream &myFile, Scenario& scenario) {
 	float theta = atan(v.y / v.x); // For grid rotation
 	float y0 = 0;
 	float x0 = 0;
-	scenario.minX = s.x;
-	scenario.minY = s.y;
-	scenario.maxX = s.x;
-	scenario.maxY = s.y;
+	scenario.updateMinMaxXY(s.x, s.y);
 	
 	for (int j = 0; j < nW; j++) {
 		bool stop = false;
@@ -416,11 +411,7 @@ void ScenarioIO::generateLogGrid(std::ifstream &myFile, Scenario& scenario) {
 			x = cos(theta)*x1 - sin(theta)*y1 + s.x;
 			y = sin(theta)*x1 + cos(theta)*y1 + s.y;
 			scenario.points.push_back(Point2D(x, y));
-
-			if (x < scenario.minX) scenario.minX = x;
-			if (x > scenario.maxX) scenario.maxX = x;
-			if (y < scenario.minY) scenario.minY = y;
-			if (y > scenario.maxY) scenario.maxY = y;
+			scenario.updateMinMaxXY(x, y);
 		}
 	}
 }
