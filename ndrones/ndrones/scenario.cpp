@@ -6,6 +6,14 @@ void Scenario::loadFile(const char* fileName) {
 }
 
 
+void Scenario::updateMinMaxXY(float x, float y) {
+	if (x < minX) minX = x;
+	if (x > maxX) maxX = x;
+	if (y < minY) minY = y;
+	if (y > maxY) maxY = y;
+}
+
+
 void Scenario::writeSolution(const char* fileName) {
 	ScenarioIO::writeSolution(fileName, *this);
 }

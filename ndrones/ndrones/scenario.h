@@ -93,6 +93,10 @@ public:
 	// @param[in] const char* fileName
 	void loadFile(const char*);
 
+	// Update scenario.minX, scenario.maxX, scenario.minY and scenario.maxY
+	// @param[in] float newX
+	// @param[in] float newY
+	void updateMinMaxXY(float newX, float newY);
 
 	// Function to call the actual write function (s) in ScenarioIO
 	// @param[in] const char* fileName
