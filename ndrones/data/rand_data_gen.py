@@ -33,7 +33,7 @@ def generate(save_path,
     for i in range(1, ndrone):
         break_time = 1
         while True:
-            drone_loc = np.random.rand(2)*max_range*scale_factor
+            drone_loc = [-1,1][random.randrange(2)] * np.random.rand(2)*max_range*scale_factor
             drone_speed = speeds[i]
             time_to_s_i = np.sqrt(np.sum((drone_loc - s)**2))/drone_speed
             if (time_to_s_i < time_to_s and break_time <= 10):
