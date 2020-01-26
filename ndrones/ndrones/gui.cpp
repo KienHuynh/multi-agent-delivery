@@ -11,6 +11,7 @@ Scenario Canvas::scenario;
 bool GUI::bigRedrawSignal = 0;
 bool GUI::drawSignal = false;
 bool GUI::drawGridSignal = false;
+ZoomMode GUI::zoomMode = ZoomMode::ALL;
 std::string GUI::canvasFileName = "";
 Canvas* GUI::canvas = NULL;
 
@@ -103,6 +104,14 @@ void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 	auto now = std::chrono::system_clock::now().time_since_epoch();
 	int mili = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	Canvas::scenario.timer = ((float)mili) / 1000;
+}
+
+
+void GUI::zoomToggleCallback(Fl_Widget *w, void *data) {
+	GUI::zoomMode = (ZoomMode) (1 - (int) GUI::zoomMode);
+	fl_color(255);
+	fl_rectf(0, 0, Canvas::canvasWidth+100, Canvas::canvasHeight+100);
+	canvas->redraw();
 }
 
 
@@ -257,14 +266,54 @@ int Canvas::handle(int e) {
 
 
 void Canvas::scenToCanvasCoord(float &x, float &y) {
-	float xDiff = ((float)scenario.maxX - scenario.minX);
-	float yDiff = ((float)scenario.maxY - scenario.minY);
+	float xDiff, yDiff;
+	float minX, minY, maxX, maxY;
+	if (GUI::zoomMode == ZoomMode::ALL) {
+		minX = scenario.minX;
+		maxX = scenario.maxX;
+		minY = scenario.minY;
+		maxY = scenario.maxY;
+
+		xDiff = maxX - minX;
+		yDiff = maxY - minY;
+	}
+	if (GUI::zoomMode == ZoomMode::ST) {
+		minX = scenario.packages[0].loc.x;
+		maxX = scenario.packages[0].loc.x;
+		minY = scenario.packages[0].loc.y;
+		maxY = scenario.packages[0].loc.y;
+		for (auto package : scenario.packages) {
+			if (minX > package.loc.x) minX = package.loc.x;
+			if (maxX < package.loc.x) maxX = package.loc.x;
+			if (minY > package.loc.y) minY = package.loc.y;
+			if (maxY < package.loc.y) maxY = package.loc.y;
+		}
+		for (auto target : scenario.targets) {
+			if (minX > target.loc.x) minX = target.loc.x;
+			if (maxX < target.loc.x) maxX = target.loc.x;
+			if (minY > target.loc.y) minY = target.loc.y;
+			if (maxY < target.loc.y) maxY = target.loc.y;
+		}
+		xDiff = maxX - minX;
+		yDiff = maxY - minY;
+
+		if (xDiff > yDiff) {
+			yDiff = xDiff;
+			minY = (maxY + minY - xDiff) / 2;
+		}
+		else {
+			xDiff = yDiff;
+			minX = (maxX + minX - yDiff) / 2;
+		}
+	}
+	
+
 	float diff = xDiff > yDiff ? xDiff : yDiff;
-	x = (x + abs(scenario.minX))*canvasWidth;
+	x = (x + abs(minX))*canvasWidth;
 	x /= diff;
 	x = x*marginScale + margin + canvasX;
 	// (canvasHeight - ((y + abs)*canvasHeight / ((float) (scenario.maxY - scenario.minY))))*marginScale + margin + canvasY;
-	y = ((y + abs(scenario.minY))*canvasHeight / diff);
+	y = ((y + abs(minY))*canvasHeight / diff);
 	y = canvasHeight - y;
 	y = y*marginScale + margin + canvasY;
 }
@@ -275,6 +324,30 @@ void Canvas::canvasToScenCoord(float &x, float &y) {
 	y = y - margin - canvasY;
 	y = canvasHeight - y;
 	y = y * ((float)(scenario.maxY - scenario.minY)) / ((float)canvasHeight);
+}
+
+
+void Canvas::drawPie360(int x, int y, int dx, int dy, char str, int label) {
+	fl_pie(x - 5, y - 5, dx, dy, 0, 360);
+
+	fl_color(0, 0, 0);
+		
+	//if (GUI::zoomMode == ZoomMode::ALL) {
+		char s[80];
+		if (label < 0) return;
+		sprintf_s(s, "%d", label);
+		fl_font(FL_HELVETICA, 18);
+		fl_draw(s, x + 5, y + 5);
+	//}
+		
+	/*if (GUI::zoomMode == ZoomMode::ST) {
+		char s[80];
+		if (label < 0) sprintf_s(s, "%c %d, %d", str, x, y);
+		else sprintf_s(s, "%c %d, %d, %d", str, label, x, y);
+		
+		fl_font(FL_HELVETICA, 18);
+		fl_draw(s, x + 5, y + 5);
+	}*/
 }
 
 
@@ -335,13 +408,7 @@ void Canvas::drawAgents() {
 		int color = 255*(v - scenario.minSpeed) / (scenario.maxSpeed - scenario.minSpeed);
 		fl_color(fl_rgb_color(25, 25, color));
 
-		fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
-
-		fl_color(0, 0, 0);
-		char s[80];
-		sprintf_s(s, "%d", (int) scenario.agents[i].v);
-		fl_font(FL_HELVETICA, 18);
-		fl_draw(s, x + 10, y + 5);
+		drawPie360(x, y, 10, 10, 'a', scenario.agents[i].v);
 	}
 }
 
@@ -353,16 +420,8 @@ void Canvas::drawPackages() {
 			float y = scenario.packages[i].loc.y;
 			scenToCanvasCoord(x, y);
 			fl_color(200, 25, 25);
-			fl_pie(((int)x) - 5, ((int)y) - 5, 10, 10, 0, 360);
 
-			// Draw package ID
-			fl_color(0, 0, 0);
-			if (scenario.packages[i].ID >= 0) {
-				char s[80];
-				sprintf_s(s, "%d", scenario.packages[i].ID);
-				fl_font(FL_HELVETICA, 18);
-				fl_draw(s, x + 5, y + 5);
-			}
+			drawPie360(x, y, 10, 10, 't', scenario.packages[i].ID);
 		}
 	}
 	
@@ -651,6 +710,10 @@ GUI::GUI(int winWidth, int winHeight) {
 	depotUsageMapOptBu->down_box(FL_ROUND_DOWN_BOX);
 	depotUsageMapOptBu->callback(gridVisRadioCallback, (void*)STIMEMAP);
 	gridVisOptionGroup->end();
+
+	// TODO: replace this with actual mouse zooming function
+	zoomBu = new Fl_Button(Canvas::canvasWidth + xButtonUnit, menuBarHeight + yButtonUnit * 7.5, 160, yButtonUnit / 2, "Zoom in/out");
+	zoomBu->callback(zoomToggleCallback);
 
 	// Create  the actual canvas
 	canvas = new Canvas(Canvas::canvasX, Canvas::canvasY, Canvas::canvasWidth, Canvas::canvasHeight, 0);

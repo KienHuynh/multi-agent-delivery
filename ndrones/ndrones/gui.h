@@ -35,7 +35,7 @@ static Fl_File_Chooser *G_chooser = NULL;
 
 enum AnimationMode{DRONEANI, PACKAGEANI};
 enum GridVisualizationMode {UNDEFINED, STPMAP, STIMEMAP, DEPOTUSAGEMAP};
-
+enum ZoomMode {ST, ALL};
 
 // The main class that display images and drawings
 class Canvas : public Fl_Group {
@@ -61,6 +61,7 @@ protected:
 	// Draw the agents
 	void drawAgents();
 
+	// Draw line animations
 	void drawLineAnis(std::vector<LineAnimation> &anis, float timeElapsed);
 
 	// Draw animations in the scenario
@@ -77,6 +78,9 @@ protected:
 
 	// The main draw function of canvas
 	void draw();
+
+	// Draw a 360 pie that also depends on zoomMode
+	void drawPie360(int x, int y, int dx, int dy, char str, int label);
 
 	// Convert scenario coords to canvas coord
 	void scenToCanvasCoord(float &x, float &y);
@@ -136,6 +140,7 @@ public:
 	Fl_Button *gridVisBu;
 	Fl_Button *scriptBu;
 	Fl_Button *clearBu;
+	Fl_Button *zoomBu;
 	Fl_Menu_Bar *menuBar;
 	Fl_Round_Button *droneAniOptBu;
 	Fl_Round_Button *packageAniOptBu;
@@ -147,6 +152,7 @@ public:
 	static std::string canvasFileName;
 
 	static bool drawSignal;
+	static ZoomMode zoomMode;
 
 	// Big redraw signal makes the canvas wipe everything, it's a bit slower so normally the small signal is preferred
 	static bool bigRedrawSignal;
@@ -157,26 +163,29 @@ public:
 	~GUI();
 
 	// Callback function for exit button
-	static void exitCallback(Fl_Widget*w, void*data);
+	static void exitCallback(Fl_Widget *w, void *data);
 	// Callback function for browse button
-	static void browseCallback(Fl_Widget*w, void*data);
+	static void browseCallback(Fl_Widget *w, void *data);
 	// Callback function for save button
-	static void saveResultCallback(Fl_Widget*w, void*data);
+	static void saveResultCallback(Fl_Widget *w, void *data);
 
 	// Callback for the solver
-	static void solverCallback(Fl_Widget*w, void*data);
+	static void solverCallback(Fl_Widget *w, void *data);
 
 	// Callback to set draw signal = true
-	static void drawSignalCallback(Fl_Widget*w, void*data);
+	static void drawSignalCallback(Fl_Widget *w, void *data);
 	// Callback to set draw signal for the grid = true
-	static void drawGridSignalCallback(Fl_Widget*w, void*data);
+	static void drawGridSignalCallback(Fl_Widget *w, void *data);
 	// Callback to run a script
-	static void runScriptCallback(Fl_Widget*w, void*data);
+	static void runScriptCallback(Fl_Widget *w, void *data);
 	// Callback to set animation mode
-	static void aniRadioCallback(Fl_Widget*w, void*data);
+	static void aniRadioCallback(Fl_Widget *w, void *data);
 
 	// Callback to set the grid visualization mode
-	static void gridVisRadioCallback(Fl_Widget*w, void*data);
+	static void gridVisRadioCallback(Fl_Widget *w, void *data);
+
+	// Callback to toggle between two zooming modes
+	static void zoomToggleCallback(Fl_Widget *w, void *data);
 };
 
 #endif
