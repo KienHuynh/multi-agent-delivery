@@ -1,0 +1,15 @@
+TWODIM EUCLID DISCRETE SINGLE_ID
+SINGLE_POINT
+1
+0 0
+SINGLE_POINT
+1
+100 0
+4
+1 1 5
+10 100 50
+20 500 220
+40 2500 1000
+GRID
+16 80 40
+An example allowing the package to go kind of far away from s-t
