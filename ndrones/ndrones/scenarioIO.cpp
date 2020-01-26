@@ -75,6 +75,9 @@ void ScenarioIO::loadDesignatedPoint(
 			scenario.points[scenario.points.size() - 1].isDesignatedPoint = true;
 			dPoints[dPoints.size() - 1].gridRef = scenario.points.size() - 1;
 		}
+
+		scenario.updateMinMaxXY(scenario.points[scenario.points.size() - 1].p.x,
+			scenario.points[scenario.points.size() - 1].p.y);
 	}
 }
 
@@ -123,6 +126,8 @@ void ScenarioIO::loadDesignatedPolygon(
 				scenario.points[scenario.points.size() - 1].isDesignatedPoint = true;
 				dPoints[dPoints.size() - 1].gridRef = scenario.points.size() - 1;
 			}
+			scenario.updateMinMaxXY(scenario.points[scenario.points.size() - 1].p.x,
+				scenario.points[scenario.points.size() - 1].p.y);
 		}
 	}
 }
@@ -298,6 +303,7 @@ void ScenarioIO::generateGrid(std::ifstream &myFile, Scenario& scenario) {
 			x = cos(theta)*x1 - sin(theta)*y1 + s.x;
 			y = sin(theta)*x1 + cos(theta)*y1 + s.y;
 			scenario.points.push_back(Point2D(x, y));
+			//std::cout << x << " " << y << std::endl;
 			scenario.updateMinMaxXY(x, y);
 		}
 		std::cout << std::endl;
