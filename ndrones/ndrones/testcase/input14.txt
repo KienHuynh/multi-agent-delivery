@@ -1,0 +1,19 @@
+TWODIM EUCLID DISCRETE SINGLE_ID
+SINGLE_POINT
+1
+0 0
+SINGLE_POINT
+1
+100 0
+6
+1 1 5
+10 100 70
+20 500 320
+30 2500 1588
+-500 12500 7950.125
+-1000 63500 39680
+GRID
+32 80 80
+An example allowing the package to go 70% away from s-t
+Best time: 1.57948
+Graphic name: strecth 2
