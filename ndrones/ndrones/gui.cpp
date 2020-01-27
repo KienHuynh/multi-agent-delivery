@@ -545,6 +545,13 @@ void Canvas::drawLineAnis(std::vector<LineAnimation> &anis, float timeElapsed) {
 			draw = true;
 		}
 
+		// Time passed without the ani activated because the speed of the ani was too fast for the comp
+		if (timeElapsed > ani.endTime && ani.active == false) {
+			newP = ani.end;
+			prevP = ani.start;
+			draw = true;
+		}
+
 		if (draw) {
 			fl_color(fl_rgb_color(ani.color[0], ani.color[1], ani.color[2]));
 			fl_line_style(FL_SOLID, 4);
