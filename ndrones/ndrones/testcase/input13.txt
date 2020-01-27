@@ -13,3 +13,5 @@ SINGLE_POINT
 GRID
 16 80 40
 An example allowing the package to go kind of far away from s-t
+Best time: 2.50995
+Graphic name: strecth 1
