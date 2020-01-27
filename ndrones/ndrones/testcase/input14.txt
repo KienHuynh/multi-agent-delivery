@@ -11,9 +11,9 @@ SINGLE_POINT
 20 500 320
 30 2500 1588
 -500 12500 7950.125
--1000 63500 39680
+-1000 62500 39780
 GRID
 32 80 80
 An example allowing the package to go 70% away from s-t
-Best time: 1.57948
+Best time: 1.57231
 Graphic name: strecth 2
