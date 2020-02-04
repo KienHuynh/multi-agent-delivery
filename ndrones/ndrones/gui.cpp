@@ -99,6 +99,7 @@ void GUI::solverCallback(Fl_Widget *w, void *data) {
 
 void GUI::drawSignalCallback(Fl_Widget *w, void *data) {
 	drawSignal = true;
+	bigRedrawSignal = true;
 	if (canvas->aniMode == DRONEANI) Canvas::scenario.createDroneAnimation();
 	if (canvas->aniMode == PACKAGEANI) Canvas::scenario.createPackageAnimation();
 	auto now = std::chrono::system_clock::now().time_since_epoch();
@@ -601,7 +602,7 @@ void Canvas::draw() {
 	if (GUI::bigRedrawSignal) {
 		// Not sure how do you clear drawn objects in FLTK so I just draw a white rectangle instead
 		fl_color(255);
-		fl_rectf(0, 0, Canvas::canvasWidth, Canvas::canvasHeight);
+		fl_rectf(0, 0, Canvas::canvasWidth + 100, Canvas::canvasHeight + 100);
 		GUI::bigRedrawSignal = 0;
 	}
 
