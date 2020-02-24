@@ -1,6 +1,4 @@
 TWODIM EUCLID DISCRETE SINGLE_ID
-0 100 4
-0 100 4
 POLY
 3
 2 1
@@ -16,6 +14,9 @@ POLY
 45 36 7
 45 57 7.5
 66 67 9
+APGRID
+0 100 4
+0 100 4
 Best time: 7.26815
 Example of 2 packages of the same role and 2 targets of the same role.
 The targets and packages are specified in form of line segments

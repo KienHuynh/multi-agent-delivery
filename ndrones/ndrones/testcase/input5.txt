@@ -1,6 +1,4 @@
 TWODIM EUCLID DISCRETE
-0 100 5
-0 100 5
 SINGLE_POINT
 4
 2 1 0
@@ -17,5 +15,8 @@ SINGLE_POINT
 45 17 7
 50 39 15
 66 67 62
+APGRID
+0 100 5
+0 100 5
 N packages - N targets problem (3 different matchings)
 5.28608

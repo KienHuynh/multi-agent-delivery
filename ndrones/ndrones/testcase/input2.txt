@@ -1,6 +1,4 @@
 TWODIM EUCLID DISCRETE
-0 100 4
-0 100 4
 SINGLE_POINT
 3
 2 1 0
@@ -16,4 +14,7 @@ SINGLE_POINT
 45 36 7
 45 57 7.5
 66 67 9
+APGRID
+0 100 4
+0 100 4
 N packages - N targets problem
