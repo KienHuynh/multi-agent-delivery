@@ -306,3 +306,72 @@ bool Agent::operator==(Agent const &obj) {
 
 	return false;
 }
+
+
+LinkedPoint2D::LinkedPoint2D(Point2D p) {
+	x = p.x;
+	y = p.y;
+	prev = NULL;
+	next = NULL;
+}
+
+
+LinkedPoint2D::LinkedPoint2D(float _x, float _y) {
+	x = _x;
+	y = _y;
+	prev = NULL;
+	next = NULL;
+}
+
+
+void LinkedPoint2D::operator=(Point2D const &p) {
+	x = p.x;
+	y = p.y;
+	prev = NULL;
+	next = NULL;
+}
+
+
+SimplePolygon::SimplePolygon(std::vector<LinkedPoint2D> _points) {
+	points = _points;
+}
+
+
+SimplePolygon::SimplePolygon(std::vector<Point2D> _points) {
+	std::vector<LinkedPoint2D> test(_points.begin(), _points.end());
+	points = test;
+}
+
+
+std::vector<Point2D> SimplePolygon::findCVHull() {
+	return std::vector<Point2D>();
+}
+
+
+bool SimplePolygon::isEar(int i, int j) {
+
+}
+
+
+void SimplePolygon::triangulate() {
+	int v0, v1, v2, v3, v4;
+	bool v1Ear, v2Ear, v3Ear;
+	int n = points.size();
+	while (n > 3) {
+		v2 = 0;
+		v2Ear = isEar(n - 1, 1);
+	}
+	do {
+		if (v2Ear) {
+			v3 = (v2 + 1) % n;
+			v4 = (v3 + 1) % n;
+			v1 = v2 - 1 < 0 ? n - (v2 - 1) % n : v2 - 1;
+			v0 = v1 - 1 < 0 ? n - (v1 - 1) % n : v1 - 1;
+			
+			v1Ear = isEar(v0, v3);
+			v3Ear = isEar(v1, v4);
+
+			
+		}
+	} while (1);
+}

@@ -20,7 +20,7 @@ constexpr auto PI = 3.14156;
 enum Solver {ECLD_2D_DYNAMIC};
 
 
-// The main for Agent
+// The class for agent
 class Agent;
 
 
@@ -154,6 +154,36 @@ public:
 	DesignatedPoint();
 	DesignatedPoint(Point2D);
 	DesignatedPoint(Point2D, int);
+};
+
+
+class LinkedPoint2D : Point2D {
+public:
+	LinkedPoint2D(Point2D p);
+	LinkedPoint2D(float x, float y);
+	LinkedPoint2D *prev, *next;
+	void operator = (Point2D const &obj);
+};
+
+
+// Simple polygon class
+class SimplePolygon {
+public:
+	SimplePolygon(std::vector<LinkedPoint2D>);
+	SimplePolygon(std::vector<Point2D>);
+	
+	std::vector<LinkedPoint2D> points;
+	std::vector<LinkedPoint2D> hullPoints;
+	std::vector<std::vector<LinkedPoint2D>> triangles;
+
+	// Using Melkman's algorithm
+	std::vector<Point2D> findCVHull();
+
+	// Detect ear
+	bool isEar(int i, int j);
+
+	// Triangulation for drawing (ear-clipping)
+	void triangulate();
 };
 
 
