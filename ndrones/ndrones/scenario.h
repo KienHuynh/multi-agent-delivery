@@ -48,6 +48,7 @@ public:
 	std::vector<Agent> agents;
 	std::vector<LineAnimation> droneAnis;
 	std::vector<LineAnimation> packageAnis;
+	std::vector<SimplePolygon> obstacles;
 
 	float maxSpeed, minSpeed;
 	int minX, maxX, minY, maxY;
@@ -76,6 +77,9 @@ public:
 	std::vector<Point2D> targetPoly;
 	// Store the target polygon
 	std::vector<Point2D> packagePoly;
+
+	// Store obstacles' polygon
+	std::vector<SimplePolygon> obs;
 
 	std::string outputFileName;
 
