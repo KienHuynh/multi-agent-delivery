@@ -496,6 +496,13 @@ void Canvas::drawTargets() {
 }
 
 
+void Canvas::drawObstacles() {
+	for (int o = 0; o < scenario.obstacles.size(); o++) {
+		
+	}
+}
+
+
 void Canvas::drawDiscretePoints() {
 	for (int i = 0; i < scenario.points.size(); i++) {
 		float x = scenario.points[i].p.x;

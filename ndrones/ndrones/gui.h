@@ -70,8 +70,11 @@ protected:
 	// Draw the packages
 	void drawPackages();
 
-	// Draw the targets;
+	// Draw the targets
 	void drawTargets();
+
+	// Draw obstacles
+	void drawObstacles();
 
 	// Draw the discrete points
 	void drawDiscretePoints();
