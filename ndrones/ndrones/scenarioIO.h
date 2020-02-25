@@ -20,7 +20,7 @@ enum SamplingMethod {
 	LOGGRID = 5
 };
 
-// Some operators to make life easier
+// Some input operators for ProblemType and DesignatedPointInputMode to make life easier
 std::istream& operator >> (std::istream &input, ProblemType& p);
 std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f);
 
@@ -57,12 +57,20 @@ public:
 	// @param[out] std::vector<DesignatedPoint> dPpoints the point list to store the DesignatedPoint (s).
 	// @param[in] Scenario scenario.
 	// @param[in] int nDPoint number of designated points to be loaded (also specified in the input file).
-
 	static void loadDesignatedPolygon(
 		std::ifstream &myfile,
 		std::vector<DesignatedPoint> &dPpoints,
 		Scenario &scenario,
 		int nDPoint);
+
+	//
+	static void loadObstacle(
+		std::ifstream &myfile,
+		std::vector<SimplePolygon> &obstacles,
+		Scenario &scenario,
+		int nObs
+	);
+
 
 private:
 	// Generate points using grid scheme. This grid is axis parallel.

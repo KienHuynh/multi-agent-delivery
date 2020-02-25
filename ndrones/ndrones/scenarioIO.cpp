@@ -133,11 +133,39 @@ void ScenarioIO::loadDesignatedPolygon(
 }
 
 
+void ScenarioIO::loadObstacle(std::ifstream &myfile,
+	std::vector<SimplePolygon> &obstacles,
+	Scenario &scenario,
+	int nObs) {
+
+	for (int i = 0; i < nObs; i++) {
+		std::vector<Point2D> points;
+		int nPoint = 0;
+		myfile >> nPoint;
+
+		for (int j = 0; j < nPoint; j++) {
+			Point2D p;
+			myfile >> p.x >> p.y;
+			points.push_back(p);
+		}
+
+		SimplePolygon polygon(points);
+		obstacles.push_back(polygon);
+	}
+}
+
+
 void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	scenario.outputFileName = std::string(fname);
 	scenario.outputFileName = scenario.outputFileName.substr(scenario.outputFileName.find_last_of("/\\") + 1);
 	std::string::size_type const p(scenario.outputFileName.find_last_of('.'));
 	scenario.outputFileName = scenario.outputFileName.substr(0, p);
+
+	int nPackage = 0, 
+		nTarget = 0, 
+		nAgent = 0, 
+		nPVertex = 0,
+		nObs = 0;
 
 	std::ifstream myfile;
 	myfile.open(fname, std::ios::in);
@@ -154,10 +182,11 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 		scenario.problemType = (ProblemType)(scenario.problemType | tmp);
 	}
 
-	int nPackage = 0, nTarget = 0, nAgent = 0, nPVertex = 0;
 
+	// Read package input mode
 	myfile >> scenario.packageInputMode;
 	myfile >> nPackage;
+	// Read packages' info
 	if (scenario.packageInputMode == SINGLE_POINT) {
 		loadDesignatedPoint(myfile, scenario.packages, scenario, nPackage);
 	}
@@ -165,8 +194,10 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 		loadDesignatedPolygon(myfile, scenario.packages, scenario, nPackage);
 	}
 
+	// Read target input mode
 	myfile >> scenario.targetInputMode;
 	myfile >> nTarget;
+	// Read targets' info
 	if (scenario.targetInputMode == SINGLE_POINT) {
 		loadDesignatedPoint(myfile, scenario.targets, scenario, nTarget);
 	}
@@ -174,6 +205,7 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 		loadDesignatedPolygon(myfile, scenario.targets, scenario, nTarget);
 	}
 
+	// Read agents' info
 	myfile >> nAgent;
 	scenario.maxSpeed = -1;
 	scenario.minSpeed = -1;
@@ -214,6 +246,11 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	if (sm == SamplingMethod::LOGGRID) {
 		generateLogGrid(myfile, scenario);
 	}
+
+	std::string tmp;
+	myfile >> tmp;
+	myfile >> nObs;
+	loadObstacle(myfile, scenario.obs, scenario, nObs);
 }
 
 
