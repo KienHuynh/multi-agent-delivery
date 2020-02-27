@@ -159,9 +159,11 @@ public:
 
 class LinkedPoint2D : Point2D {
 public:
+	float x, y;
 	LinkedPoint2D(Point2D p);
 	LinkedPoint2D(float x, float y);
-	LinkedPoint2D *prev, *next;
+	int prev, next;
+	bool isEar;
 	void operator = (Point2D const &obj);
 };
 
@@ -179,8 +181,40 @@ public:
 	// Using Melkman's algorithm
 	std::vector<Point2D> findCVHull();
 
-	// Detect ear
-	bool isEar(int i, int j);
+	// Compute 2 * the area of the triangle a, b, c
+	float Area2(int a, int b, int c);
+
+	// Return true of c is to the left of (a,b)
+	bool left(int a, int b, int c);
+
+	// Return true of c is to the left of or on (a,b)
+	// The "On" here is basically infeasible to compute because all coordinates are float
+	// But this is still a different function from left( ) just in case
+	bool leftOn(int a, int b, int c);
+
+	// Return true if (a, b) lies inside the polygon
+	bool inCone(int a, int b);
+
+	// Check if three points are colinear
+	bool colinear(int a, int b, int c);
+	
+	// Check if c lies on (a, b) and is between a and b
+	bool between(int a, int b, int c);
+
+	// Check if two segments 
+	bool intersectProp(int a, int b, int c, int d);
+
+	// Check if (a, b) intersects with (c, d)
+	bool intersect(int a, int b, int c, int d);
+
+	// Check if (a, b) cuts any edge of the polygon
+	bool diagonalie(int a, int b);
+
+	// Return true if (a, b) is a diagonal
+	bool diagonal(int a, int b);
+
+	// Assign isEar = true for all vertices that are ear
+	void earInit();
 
 	// Triangulation for drawing (ear-clipping)
 	void triangulate();

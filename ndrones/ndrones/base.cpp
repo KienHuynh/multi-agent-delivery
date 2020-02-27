@@ -334,12 +334,25 @@ void LinkedPoint2D::operator=(Point2D const &p) {
 
 SimplePolygon::SimplePolygon(std::vector<LinkedPoint2D> _points) {
 	points = _points;
+
+	points[0].prev = points.size() - 1;
+	points[0].next = 1;
+	for (int i = 1; i < points.size(); i++) {
+		points[i].prev = i - 1;
+		points[i].next = (i + 1) % points.size();
+	}
 }
 
 
 SimplePolygon::SimplePolygon(std::vector<Point2D> _points) {
 	std::vector<LinkedPoint2D> test(_points.begin(), _points.end());
 	points = test;
+	points[0].prev = points.size() - 1;
+	points[0].next = 1;
+	for (int i = 1; i < points.size(); i++) {
+		points[i].prev = i - 1;
+		points[i].next = (i + 1) % points.size();
+	}
 }
 
 
@@ -348,30 +361,140 @@ std::vector<Point2D> SimplePolygon::findCVHull() {
 }
 
 
-bool SimplePolygon::isEar(int i, int j) {
+float SimplePolygon::Area2(int a, int b, int c) {
+	return (points[b].x - points[a].x)*(points[c].y - points[a].y) -
+		(points[c].x - points[a].x)*(points[b].y - points[a].y);
+}
 
+
+bool SimplePolygon::left(int a, int b, int c) {
+	return Area2(a, b, c) > 0;
+}
+
+
+bool SimplePolygon::leftOn(int a, int b, int c) {
+	return Area2(a, b, c) >= 0;
+}
+
+
+bool SimplePolygon::colinear(int a, int b, int c) {
+	return Area2(a, b, c) == 0;
+}
+
+
+bool SimplePolygon::inCone(int a, int b) {
+	int n = points.size();
+	int a0 = points[a].prev;
+	int a1 = points[a].next;
+	
+	if (leftOn(a, a1, a0)) {
+		return left(a, b, a0) && left(b, a, a1);
+	}
+
+	return !(leftOn(a, b, a1) && leftOn(b,a,a0));
+}
+	
+
+bool SimplePolygon::between(int a, int b, int c) {
+	int ba, ca;
+	if (!colinear(a, b, c)) return false;
+
+	if (points[a].x != points[b].x)
+		return
+		((points[a].x <= points[c].x) && (points[c].x <= points[b].x)) ||
+		((points[a].x >= points[c].x) && (points[c].x >= points[b].x));
+	else
+		return
+		((points[a].y <= points[c].y) && (points[c].y <= points[b].y)) ||
+		((points[a].y >= points[c].y) && (points[c].y >= points[b].y));
+}
+
+
+bool SimplePolygon::intersectProp(int a, int b, int c, int d) {
+	if (colinear(a, b, c) ||
+		colinear(a, b, d) ||
+		colinear(c, d, a) ||
+		colinear(c, b, d)) return false;
+
+	return 
+		(!(left(a, b, c)) ^ !(left(a, b, d))) &&
+		(!(left(c, d, a)) ^ !(left(c, d, b)));
+}
+
+
+bool SimplePolygon::intersect(int a, int b, int c, int d) {
+	if (intersectProp(a, b, c, d)) {
+		return true;
+	}
+	else if (
+		between(a, b, c) || between(a, b, d) ||
+		between(c, d, a) || between(c, d, b)
+		)
+		return true;
+
+	return false;
+}
+
+
+bool SimplePolygon::diagonalie(int a, int b) {
+	int c = 0, c1;
+	do {
+		c1 = points[c].next;
+		if ((c != a) && (c1 != a) &&
+			(c != b) && (c1 != b) &&
+			intersect(a, b, c, c1)) return false;
+		c = points[c].next;
+	} while (c != 0);
+	return true;
+}
+
+
+bool SimplePolygon::diagonal(int a, int b) {
+	return inCone(a, b) && inCone(b, a) && diagonalie(a, b);
+}
+
+
+void SimplePolygon::earInit() {
+	int v0, v1, v2;
+	v1 = 0;
+	do {
+		v2 = points[v1].next;
+		v0 = points[v1].prev;
+		points[v1].isEar = diagonal(v0, v2);
+		v1 = points[v1].next;
+	} while (v1 != 0);
 }
 
 
 void SimplePolygon::triangulate() {
 	int v0, v1, v2, v3, v4;
-	bool v1Ear, v2Ear, v3Ear;
-	int n = points.size();
+	std::vector<LinkedPoint2D> pointsCopy = points;
+	int n = pointsCopy.size();
+	int start = 0;
 	while (n > 3) {
-		v2 = 0;
-		v2Ear = isEar(n - 1, 1);
-	}
-	do {
-		if (v2Ear) {
-			v3 = (v2 + 1) % n;
-			v4 = (v3 + 1) % n;
-			v1 = v2 - 1 < 0 ? n - (v2 - 1) % n : v2 - 1;
-			v0 = v1 - 1 < 0 ? n - (v1 - 1) % n : v1 - 1;
-			
-			v1Ear = isEar(v0, v3);
-			v3Ear = isEar(v1, v4);
+		v2 = start;
+		do {
+			if (pointsCopy[v2].isEar) {
+				// v1, v2, v3 is a triangle
 
-			
-		}
-	} while (1);
+
+				v3 = pointsCopy[v2].next;
+				v4 = pointsCopy[v3].next;
+				v1 = pointsCopy[v2].prev;
+				v0 = pointsCopy[v1].prev;
+				
+				pointsCopy[v1].isEar = diagonal(v0, v3);
+				pointsCopy[v3].isEar = diagonal(v1, v4);
+				
+
+				pointsCopy[v1].next = v3;
+				pointsCopy[v3].prev = v1;
+				
+				start = v3;
+				n--;
+				break;
+			}
+			v2 = pointsCopy[v2].next;
+		} while (v2 != start);
+	}
 }
