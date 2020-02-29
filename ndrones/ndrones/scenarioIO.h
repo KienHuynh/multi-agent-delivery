@@ -66,7 +66,6 @@ public:
 	//
 	static void loadObstacle(
 		std::ifstream &myfile,
-		std::vector<SimplePolygon> &obstacles,
 		Scenario &scenario,
 		int nObs
 	);

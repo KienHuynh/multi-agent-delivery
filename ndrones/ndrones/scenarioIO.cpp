@@ -134,10 +134,10 @@ void ScenarioIO::loadDesignatedPolygon(
 
 
 void ScenarioIO::loadObstacle(std::ifstream &myfile,
-	std::vector<SimplePolygon> &obstacles,
 	Scenario &scenario,
 	int nObs) {
 
+	std::vector<SimplePolygon> obstacles;
 	for (int i = 0; i < nObs; i++) {
 		std::vector<Point2D> points;
 		int nPoint = 0;
@@ -150,7 +150,23 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 		}
 
 		SimplePolygon polygon(points);
+		// Triangulate it (for drawing and coloring, mostly)
+		polygon.triangulate();
+		// Find convex hull
+		polygon.findCVHull();
+
 		obstacles.push_back(polygon);
+	}
+	scenario.obstacles = obstacles;
+
+	// Eliminate points inside the obstacles
+	for (auto o : obstacles) {
+		for (int i = scenario.points.size()-1; i >= 0; i--)
+		{
+			if (o.contain(scenario.points[i].p)) {
+				scenario.points.erase(scenario.points.begin() + i);
+			}
+		}
 	}
 }
 
@@ -176,10 +192,10 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	getline(myfile, str);
 	std::istringstream ss(str);
 
-	ProblemType tmp;
+	ProblemType pt;
 	SamplingMethod sm = UNSPECIFIED;
-	while (ss >> tmp) {
-		scenario.problemType = (ProblemType)(scenario.problemType | tmp);
+	while (ss >> pt) {
+		scenario.problemType = (ProblemType)(scenario.problemType | pt);
 	}
 
 
@@ -250,7 +266,11 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	std::string tmp;
 	myfile >> tmp;
 	myfile >> nObs;
-	loadObstacle(myfile, scenario.obs, scenario, nObs);
+	loadObstacle(myfile, scenario, nObs);
+
+	
+
+	myfile.close();
 }
 
 
