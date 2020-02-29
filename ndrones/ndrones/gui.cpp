@@ -436,7 +436,8 @@ void Canvas::drawPackages() {
 			scenToCanvasCoord(x0, y0);
 			scenToCanvasCoord(x1, y1);
 			fl_color(200, 25, 25);
-			fl_normal_line(x0, canvasHeight - y0, x1, canvasHeight - y1);
+			//fl_normal_line(x0, canvasHeight - y0, x1, canvasHeight - y1);
+			fl_line(x0, y0, x1, y1);
 
 			// Draw target ID
 			fl_color(0, 0, 0);
@@ -481,7 +482,8 @@ void Canvas::drawTargets() {
 			scenToCanvasCoord(x0, y0);
 			scenToCanvasCoord(x1, y1);
 			fl_color(25, 200, 25);
-			fl_normal_line(x0, canvasHeight - y0, x1, canvasHeight - y1);
+			//fl_normal_line(x0, canvasHeight - y0, x1, canvasHeight - y1);
+			fl_line(x0, y0, x1, y1);
 
 			// Draw target ID
 			fl_color(0, 0, 0);
@@ -497,8 +499,36 @@ void Canvas::drawTargets() {
 
 
 void Canvas::drawObstacles() {
-	for (int o = 0; o < scenario.obstacles.size(); o++) {
+	for (auto o : scenario.obstacles) {
+		for (auto t : o.triIdx) {
+			float x0 = o.points[t[0]].x;
+			float y0 = o.points[t[0]].y;
+			float x1 = o.points[t[1]].x;
+			float y1 = o.points[t[1]].y;
+			float x2 = o.points[t[2]].x;
+			float y2 = o.points[t[2]].y;
+			scenToCanvasCoord(x0, y0);
+			scenToCanvasCoord(x1, y1);
+			scenToCanvasCoord(x2, y2);
+			
+			fl_color(250, 200, 100);
+			fl_polygon(x0, y0, x1, y1, x2, y2);
+		}
 		
+		for (int i = 0; i < o.hullPtIdx.size(); i++) {
+			int j0 = o.hullPtIdx[i];
+			int j1 = o.hullPtIdx[(i + 1) % o.hullPtIdx.size()];
+			float x0 = o.points[j0].x;
+			float y0 = o.points[j0].y;
+			float x1 = o.points[j1].x;
+			float y1 = o.points[j1].y;
+			scenToCanvasCoord(x0, y0);
+			scenToCanvasCoord(x1, y1);
+			
+			fl_color(200, 100, 250);
+			fl_line_style(FL_SOLID, 2);
+			fl_line(x0, y0, x1, y1);
+		}
 	}
 }
 
@@ -565,9 +595,9 @@ void Canvas::drawLineAnis(std::vector<LineAnimation> &anis, float timeElapsed) {
 			fl_line_style(FL_SOLID, 4);
 			scenToCanvasCoord(newP.x, newP.y);
 			scenToCanvasCoord(prevP.x, prevP.y);
-			newP.y = canvasHeight - newP.y;
-			prevP.y = canvasHeight - prevP.y;
-			fl_normal_line(newP.x, newP.y, prevP.x, prevP.y);
+			// newP.y = canvasHeight - newP.y;
+			// prevP.y = canvasHeight - prevP.y;
+			fl_line(newP.x, newP.y, prevP.x, prevP.y);
 		}
 	}
 }
@@ -622,6 +652,7 @@ void Canvas::draw() {
 	}
 
 	drawGridPoints();
+	drawObstacles();
 	drawAgents();
 	drawPackages();
 	drawTargets();
