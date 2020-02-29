@@ -356,8 +356,80 @@ SimplePolygon::SimplePolygon(std::vector<Point2D> _points) {
 }
 
 
-std::vector<Point2D> SimplePolygon::findCVHull() {
-	return std::vector<Point2D>();
+void SimplePolygon::findCVHull() {
+	std::vector<int> deque;
+	if (left(0, 1, 2)) {
+		deque.push_back(2);
+		deque.push_back(0);
+		deque.push_back(1);
+		deque.push_back(2);
+	}
+	else {
+		deque.push_back(2);
+		deque.push_back(1);
+		deque.push_back(0);
+		deque.push_back(2);
+	}
+	int i = 3;
+	
+	while (i < points.size()) {
+		while (
+			left(deque[deque.size() - 2], deque[deque.size() - 1], i) &&
+			left(deque[0], deque[1], i)
+			) {
+			i = i + 1;
+			if (i >= points.size()) break;
+		}
+		if (i >= points.size()) break;
+
+		while (!left(deque[deque.size() - 2], deque[deque.size() - 1], i)) {
+			deque.pop_back();
+		}
+		deque.push_back(i);
+		while (!left(i, deque[0], deque[1])) {
+			deque.erase(deque.begin());
+		}
+		deque.insert(deque.begin(), i);
+		i = i + 1;
+	}
+
+	deque.pop_back();
+	hullPtIdx = deque;
+}
+
+
+void SimplePolygon::findPocketTriangles() {
+	for (int h = 0; h < hullPtIdx.size(); h++) {
+		int i = hullPtIdx[h % hullPtIdx.size()];
+		int j = hullPtIdx[(h + 1) % hullPtIdx.size()];
+
+		// There's a pocket
+		if (i + 1 < j) {
+
+		}
+	}
+}
+
+
+bool SimplePolygon::contain(Point2D a) {
+	int n = points.size();
+	int count = 0;
+	for (int i = 0; i < n; i++) {
+		int i1 = (i + n - 1) % n;
+		LinkedPoint2D p1 = points[i];
+		LinkedPoint2D p2 = points[i1];
+		if (((p1.y > a.y) && (p2.y <= a.y)) ||
+			((p2.y > a.y) && (p1.y <= a.y))) {
+			float xq, yq = a.y;
+			if (p1.x == p2.x) xq = p1.x;
+			else {
+				xq = (a.y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;
+			}
+			if (xq > a.x) count++;
+		}
+	}
+
+	return count % 2;
 }
 
 
@@ -476,12 +548,12 @@ void SimplePolygon::triangulate() {
 		do {
 			if (pointsCopy[v2].isEar) {
 				// v1, v2, v3 is a triangle
-
-
 				v3 = pointsCopy[v2].next;
 				v4 = pointsCopy[v3].next;
 				v1 = pointsCopy[v2].prev;
 				v0 = pointsCopy[v1].prev;
+
+				triIdx.push_back(std::vector<int>({ v1, v2, v3 }));
 				
 				pointsCopy[v1].isEar = diagonal(v0, v3);
 				pointsCopy[v3].isEar = diagonal(v1, v4);
@@ -497,4 +569,6 @@ void SimplePolygon::triangulate() {
 			v2 = pointsCopy[v2].next;
 		} while (v2 != start);
 	}
+	// Insert the last triangle
+	triIdx.push_back(std::vector<int>({ pointsCopy[start].prev, start, pointsCopy[start].next}));
 }

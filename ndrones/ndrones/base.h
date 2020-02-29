@@ -164,7 +164,15 @@ public:
 	LinkedPoint2D(float x, float y);
 	int prev, next;
 	bool isEar;
+	bool hullPoint;
 	void operator = (Point2D const &obj);
+};
+
+
+enum PointLocation {
+	INPOLY,
+	INPOCKET,
+	OUTOFHULL
 };
 
 
@@ -175,11 +183,21 @@ public:
 	SimplePolygon(std::vector<Point2D>);
 	
 	std::vector<LinkedPoint2D> points;
-	std::vector<LinkedPoint2D> hullPoints;
-	std::vector<std::vector<LinkedPoint2D>> triangles;
+	// Hull point index, storing indices of hull points
+	std::vector<int> hullPtIdx;
+	// Triangle index, storing indices of all triangles after triangulation
+	std::vector<std::vector<int>> triIdx;
+	// Pocket triangle index, storing indices of all triangles after triangulation of each pocket
+	std::vector<std::vector<int>> pocketTriIdx;
 
 	// Using Melkman's algorithm
-	std::vector<Point2D> findCVHull();
+	void findCVHull();
+
+	// Find the pockets
+	void findPocketTriangles();
+
+	// Check if point is inside polygon
+	bool contain(Point2D);
 
 	// Compute 2 * the area of the triangle a, b, c
 	float Area2(int a, int b, int c);
