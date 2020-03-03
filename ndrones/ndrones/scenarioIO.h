@@ -63,13 +63,15 @@ public:
 		Scenario &scenario,
 		int nDPoint);
 
-	//
+	// Load obstacles into scenario
+	// @param[out] myfile ifstream object with the input file already loaded.
+	// @param[in] Scenario scenario.
+	// @param[in] int nObs number of obstacles
 	static void loadObstacle(
 		std::ifstream &myfile,
 		Scenario &scenario,
 		int nObs
 	);
-
 
 private:
 	// Generate points using grid scheme. This grid is axis parallel.

@@ -161,10 +161,33 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 
 	// Eliminate points inside the obstacles
 	for (auto o : obstacles) {
+		int count = 0;
 		for (int i = scenario.points.size()-1; i >= 0; i--)
 		{
 			if (o.contain(scenario.points[i].p)) {
 				scenario.points.erase(scenario.points.begin() + i);
+				count++;
+			}
+		}
+
+		// Add points on the boundary of each obstacle as potential handoff points
+		float nNewPoint = sqrt((float)count);
+		for (int i = 0; i < o.points.size(); i++) {
+			Point2D p0(o.points[i].x, o.points[i].y);
+			Point2D p1;
+			p1 = o.points[(i + 1) % o.points.size()];
+			if (!scenario.containPoint(p0))
+				scenario.points.push_back(p0);
+
+			float length = Point2D::l2Distance(p0, p1);
+			int nNewPoint_i = (int) (length * nNewPoint / o.perimeter);
+			for (int j = 0; j < nNewPoint_i; j++) {
+				float ratio = ((float)(j + 1)) / ((float)(nNewPoint_i + 2));
+				float newX = p0.x + ratio * (p1.x - p0.x);
+				float newY = p0.y + ratio * (p1.y - p0.y);
+				Point2D newP(newX, newY);
+				if (!scenario.containPoint(newP))
+					scenario.points.push_back(Point2D(newX, newY));
 			}
 		}
 	}
