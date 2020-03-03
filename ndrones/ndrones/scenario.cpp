@@ -68,9 +68,25 @@ Color Scenario::depotColorMap(DesignatedPoint dp) {
 }
 
 
+bool Scenario::containPoint(Point2D p) {
+	for (int i = 0; i < points.size(); i++) {
+		if (points[i].p == p) return true;
+	}
+	return false;
+}
+
+
 bool Scenario::isDesignatedPoint(PointState ps) {
 	return ps.isDesignatedPoint;
 }
+
+
+std::vector<int> geodesicL2Distance(Point2D a, Point2D b) {
+	return std::vector<int>({ 1 });
+}
+
+
+
 
 
 void Scenario::ecld2DType0DynamicNMCommon(

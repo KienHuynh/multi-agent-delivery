@@ -6,6 +6,7 @@
 
 #include <array>
 #include <sstream>
+#include <map> 
 
 #include "base.h"
 #include "scenarioIO.h"
@@ -50,7 +51,9 @@ public:
 	std::vector<LineAnimation> packageAnis;
 	std::vector<SimplePolygon> obstacles;
 
+	// Max/min speed among the agents
 	float maxSpeed, minSpeed;
+	// Max/min x/y among the points
 	int minX, maxX, minY, maxY;
 	float makespan;
 
@@ -81,6 +84,10 @@ public:
 	// Store obstacles' polygon
 	std::vector<SimplePolygon> obs;
 
+	// Shortest path hash map, for faster calculation
+	std::map<std::vector<int>, std::vector<int>> stpHashMap;
+
+	// 
 	std::string outputFileName;
 
 	// Variables storing the solution
@@ -106,7 +113,6 @@ public:
 	// @param[in] const char* fileName
 	void writeSolution(const char*);
 
-
 	// Check if a point is one of the packages
 	// TODO: use better data structure?
 	// @param[in] int index of a grid point.
@@ -114,10 +120,24 @@ public:
 	// @return bool
 	bool isPackage(int, std::vector<DesignatedPoint>);
 
-	// Check if a point is one of the Designated Points (target, package, etc.)
+	// CHeck if point p already exists in this.points
 	// @param[in] Point2D p
 	// @return bool
+	bool containPoint(Point2D p);
+
+	// Check if a point is one of the Designated Points (target, package, etc.)
+	// @param[in] PointState p
+	// @return bool
 	bool isDesignatedPoint(PointState ps);
+
+	// Compute shortest path between two points over the obstacles present in this scenario
+	// @param[in] Point2D a
+	// @param[in] Point2D b
+	// @return std::vector<int> The best index sequence of points in scenario.points
+	std::vector<int> geodesicL2Distance(Point2D a, Point2D b);
+	
+	// Create the shortest path hash map
+	void constructSTPHashMap();
 
 	// Mapping from list of agents to some predefined colors
 	// @param[in] std::vector<Agent> agents
