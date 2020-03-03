@@ -163,6 +163,12 @@ bool Point2D::operator == (Point2D const &obj) {
 }
 
 
+void Point2D::operator = (LinkedPoint2D const&obj) {
+	x = obj.x;
+	y = obj.y;
+}
+
+
 bool PointState::bestTimeLT(PointState a, PointState b) {
 	return a.bestTime < b.bestTime;
 }
@@ -337,9 +343,12 @@ SimplePolygon::SimplePolygon(std::vector<LinkedPoint2D> _points) {
 
 	points[0].prev = points.size() - 1;
 	points[0].next = 1;
+
+	perimeter = LinkedPoint2D::l2Distance(points[0], points[1]);
 	for (int i = 1; i < points.size(); i++) {
 		points[i].prev = i - 1;
 		points[i].next = (i + 1) % points.size();
+		perimeter += LinkedPoint2D::l2Distance(points[i], points[(i + 1) % points.size()]);
 	}
 }
 
@@ -349,16 +358,19 @@ SimplePolygon::SimplePolygon(std::vector<Point2D> _points) {
 	points = test;
 	points[0].prev = points.size() - 1;
 	points[0].next = 1;
+
+	perimeter = LinkedPoint2D::l2Distance(points[0], points[1]);
 	for (int i = 1; i < points.size(); i++) {
 		points[i].prev = i - 1;
 		points[i].next = (i + 1) % points.size();
+		perimeter += LinkedPoint2D::l2Distance(points[i], points[(i + 1) % points.size()]);
 	}
 }
 
 
 void SimplePolygon::findCVHull() {
 	std::vector<int> deque;
-	if (left(0, 1, 2)) {
+	if (Point2D::left(points[0], points[1], points[2])) {
 		deque.push_back(2);
 		deque.push_back(0);
 		deque.push_back(1);
@@ -374,19 +386,31 @@ void SimplePolygon::findCVHull() {
 	
 	while (i < points.size()) {
 		while (
-			left(deque[deque.size() - 2], deque[deque.size() - 1], i) &&
-			left(deque[0], deque[1], i)
+			Point2D::left(
+				points[deque[deque.size() - 2]], 
+				points[deque[deque.size() - 1]], 
+				points[i]) 
+			&&
+			Point2D::left(
+				points[deque[0]], 
+				points[deque[1]], 
+				points[i])
 			) {
 			i = i + 1;
 			if (i >= points.size()) break;
 		}
 		if (i >= points.size()) break;
 
-		while (!left(deque[deque.size() - 2], deque[deque.size() - 1], i)) {
+		while (
+			!Point2D::left(
+			points[deque[deque.size() - 2]],
+			points[deque[deque.size() - 1]], 
+			points[i])) {
 			deque.pop_back();
 		}
+
 		deque.push_back(i);
-		while (!left(i, deque[0], deque[1])) {
+		while (!Point2D::left(points[i], points[deque[0]], points[deque[1]])) {
 			deque.erase(deque.begin());
 		}
 		deque.insert(deque.begin(), i);
@@ -433,23 +457,23 @@ bool SimplePolygon::contain(Point2D a) {
 }
 
 
-float SimplePolygon::Area2(int a, int b, int c) {
-	return (points[b].x - points[a].x)*(points[c].y - points[a].y) -
-		(points[c].x - points[a].x)*(points[b].y - points[a].y);
+float Point2D::Area2(Point2D a, Point2D b, Point2D c) {
+	return (b.x - a.x)*(c.y - a.y) -
+		(c.x - a.x)*(b.y - a.y);
 }
 
 
-bool SimplePolygon::left(int a, int b, int c) {
+bool Point2D::left(Point2D a, Point2D b, Point2D c) {
 	return Area2(a, b, c) > 0;
 }
 
 
-bool SimplePolygon::leftOn(int a, int b, int c) {
+bool Point2D::leftOn(Point2D a, Point2D b, Point2D c) {
 	return Area2(a, b, c) >= 0;
 }
 
 
-bool SimplePolygon::colinear(int a, int b, int c) {
+bool Point2D::colinear(Point2D a, Point2D b, Point2D c) {
 	return Area2(a, b, c) == 0;
 }
 
@@ -459,30 +483,32 @@ bool SimplePolygon::inCone(int a, int b) {
 	int a0 = points[a].prev;
 	int a1 = points[a].next;
 	
-	if (leftOn(a, a1, a0)) {
-		return left(a, b, a0) && left(b, a, a1);
+	if (Point2D::leftOn(points[a], points[a1], points[a0])) {
+		return Point2D::left(points[a], points[b], points[a0]) 
+			&& Point2D::left(points[b], points[a], points[a1]);
 	}
 
-	return !(leftOn(a, b, a1) && leftOn(b,a,a0));
+	return !(Point2D::leftOn(points[a], points[b], points[a1]) 
+		&& Point2D::leftOn(points[b], points[a], points[a0]));
 }
 	
 
-bool SimplePolygon::between(int a, int b, int c) {
+bool Point2D::between(Point2D a, Point2D b, Point2D c) {
 	int ba, ca;
 	if (!colinear(a, b, c)) return false;
 
-	if (points[a].x != points[b].x)
+	if (a.x != b.x)
 		return
-		((points[a].x <= points[c].x) && (points[c].x <= points[b].x)) ||
-		((points[a].x >= points[c].x) && (points[c].x >= points[b].x));
+		((a.x <= c.x) && (c.x <= b.x)) ||
+		((a.x >= c.x) && (c.x >= b.x));
 	else
 		return
-		((points[a].y <= points[c].y) && (points[c].y <= points[b].y)) ||
-		((points[a].y >= points[c].y) && (points[c].y >= points[b].y));
+		((a.y <= c.y) && (c.y <= b.y)) ||
+		((a.y >= c.y) && (c.y >= b.y));
 }
 
 
-bool SimplePolygon::intersectProp(int a, int b, int c, int d) {
+bool Point2D::intersectProp(Point2D a, Point2D b, Point2D c, Point2D d) {
 	if (colinear(a, b, c) ||
 		colinear(a, b, d) ||
 		colinear(c, d, a) ||
@@ -494,7 +520,7 @@ bool SimplePolygon::intersectProp(int a, int b, int c, int d) {
 }
 
 
-bool SimplePolygon::intersect(int a, int b, int c, int d) {
+bool Point2D::intersect(Point2D a, Point2D b, Point2D c, Point2D d) {
 	if (intersectProp(a, b, c, d)) {
 		return true;
 	}
@@ -514,7 +540,7 @@ bool SimplePolygon::diagonalie(int a, int b) {
 		c1 = points[c].next;
 		if ((c != a) && (c1 != a) &&
 			(c != b) && (c1 != b) &&
-			intersect(a, b, c, c1)) return false;
+			Point2D::intersect(points[a], points[b], points[c], points[c1])) return false;
 		c = points[c].next;
 	} while (c != 0);
 	return true;
