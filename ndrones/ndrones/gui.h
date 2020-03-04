@@ -76,6 +76,9 @@ protected:
 	// Draw obstacles
 	void drawObstacles();
 
+	// Draw the graph
+	void drawGraph();
+
 	// Draw the discrete points
 	void drawDiscretePoints();
 

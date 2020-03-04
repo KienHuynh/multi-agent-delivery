@@ -129,7 +129,7 @@ void Canvas::computeColorMap() {
 	for (int i = 0; i < scenario.points.size(); i++) {
 		Color color(255, 255, 255);
 		if (gridVisMode == STPMAP) {
-			color = Scenario::agentQueueColorMap(scenario.points[i].agentQueue);	
+			color = Scenario::agentQueueColorMap(scenario.agents);
 		}
 		if (gridVisMode == STIMEMAP) {
 			color = Scenario::bestTimeColorMap(s, l, scenario.points[i].bestTime);
@@ -515,7 +515,7 @@ void Canvas::drawObstacles() {
 			fl_polygon(x0, y0, x1, y1, x2, y2);
 		}
 		
-		for (int i = 0; i < o.hullPtIdx.size(); i++) {
+		/*for (int i = 0; i < o.hullPtIdx.size(); i++) {
 			int j0 = o.hullPtIdx[i];
 			int j1 = o.hullPtIdx[(i + 1) % o.hullPtIdx.size()];
 			float x0 = o.points[j0].x;
@@ -526,6 +526,24 @@ void Canvas::drawObstacles() {
 			scenToCanvasCoord(x1, y1);
 			
 			fl_color(200, 100, 250);
+			fl_line_style(FL_SOLID, 2);
+			fl_line(x0, y0, x1, y1);
+		}*/
+	}
+}
+
+
+void Canvas::drawGraph() {
+	for (int i = 0; i < scenario.edgeList.size(); i++) {
+		for (auto e : scenario.edgeList[i].e) {
+			float x0 = scenario.points[i].p.x;
+			float y0 = scenario.points[i].p.y;
+			float x1 = scenario.points[e].p.x;
+			float y1 = scenario.points[e].p.y;
+			scenToCanvasCoord(x0, y0);
+			scenToCanvasCoord(x1, y1);
+
+			fl_color(100, 0, 50);
 			fl_line_style(FL_SOLID, 2);
 			fl_line(x0, y0, x1, y1);
 		}
@@ -651,8 +669,10 @@ void Canvas::draw() {
 		fl_font(FL_COURIER, 80);
 	}
 
-	drawGridPoints();
+	
 	drawObstacles();
+	//drawGraph();
+	drawGridPoints();
 	drawAgents();
 	drawPackages();
 	drawTargets();
