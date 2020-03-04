@@ -43,13 +43,29 @@ enum ProblemType {
 // Store the scenario: data points, designated points (packages, targets), agents
 // Include the solvers to the problems and creation of animations
 class Scenario {
+private:
+	// Support class for Scenario
+	// Only work with the index of Scenario::points
+	// so it makes sense for this to be in Scenario
+	class ShortestPath {
+	public:
+		std::vector<int> path;
+		float length;
+	};
+
+	// Support class for the graph
+	class EdgeList {
+	public:
+		std::vector<int> e;
+		std::vector<float> w;
+	};
+
 public:
 	ProblemType problemType;
 
 	std::vector<Agent> agents;
 	std::vector<LineAnimation> droneAnis;
 	std::vector<LineAnimation> packageAnis;
-	std::vector<SimplePolygon> obstacles;
 
 	// Max/min speed among the agents
 	float maxSpeed, minSpeed;
@@ -63,8 +79,8 @@ public:
 
 	// The set of discrete points.
 	std::vector<PointState> points;
-	// The edge list for all of the points above
-	std::vector<std::set<int>> edgeList;
+	// The edge list for all of the points above, used for graph construction
+	std::vector<EdgeList> edgeList;
 	// Store the packages.
 	std::vector<DesignatedPoint> packages;
 	// Store the targets.
@@ -85,7 +101,7 @@ public:
 	std::vector<SimplePolygon> obs;
 
 	// Shortest path hash map, for faster calculation
-	std::map<std::vector<int>, std::vector<int>> stpHashMap;
+	std::map<std::vector<int>, ShortestPath> stpMap;
 
 	// 
 	std::string outputFileName;
@@ -131,13 +147,13 @@ public:
 	bool isDesignatedPoint(PointState ps);
 
 	// Compute shortest path between two points over the obstacles present in this scenario
-	// @param[in] Point2D a
-	// @param[in] Point2D b
-	// @return std::vector<int> The best index sequence of points in scenario.points
-	std::vector<int> geodesicL2Distance(Point2D a, Point2D b);
+	// @param[in] int a
+	// @param[in] int b
+	// @return ShortestPath The best index sequence of points in scenario.points
+	ShortestPath geodesicL2Distance(int a, int b);
 	
 	// Create the shortest path hash map
-	void constructSTPHashMap();
+	void constructSTPMap();
 
 	// Mapping from list of agents to some predefined colors
 	// @param[in] std::vector<Agent> agents

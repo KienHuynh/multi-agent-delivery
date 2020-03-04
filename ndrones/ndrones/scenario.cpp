@@ -81,12 +81,122 @@ bool Scenario::isDesignatedPoint(PointState ps) {
 }
 
 
-std::vector<int> geodesicL2Distance(Point2D a, Point2D b) {
-	return std::vector<int>({ 1 });
+Scenario::ShortestPath Scenario::geodesicL2Distance(int a, int b) {
+	ShortestPath stp;
+	std::map<std::vector<int>, ShortestPath>::iterator it = 
+		stpMap.find(std::vector<int>({a, b}));
+
+	// Straight line
+	if (it == stpMap.end()) {
+		stp.path.push_back(b);
+		stp.length = Point2D::l2Distance(points[a].p, points[b].p);
+	}
+	else {
+		stp = it->second;
+	}
+
+	return stp;
 }
 
 
+void Scenario::constructSTPMap() {
+	// If there is no obstacle, we can use L2 distance for everything
+	// and there is no need for a graph
+	if (obs.size() == 0) return;
+	
+	// Construct the graph
+	// NOTE: at this point, all points inside the obstacles should have been removed
+	// The SimplePolygon::segIntersect function still check for the cases where
+	// a point lies inside the polygon just in case
+	for (int i = 0; i < points.size(); i++) {
+		EdgeList edgeList_i;
+		for (int j = 0; j < points.size(); j++) {
+			if (!points[i].isOb && !points[j].isOb) continue;
+			Point2D pi = points[i].p;
+			Point2D pj = points[j].p;
+			bool isEdge = true;
+			// |V|^2 * K 
+			// TODO: modify segIntersect so that it takes logK
+			for (auto ob : obs) {
+				if (ob.segIntersect(pi, pj)) {
+					isEdge = false;
+					break;
+				}
+			}
+			if (isEdge) {
+				edgeList_i.e.push_back(j);
+				edgeList_i.w.push_back(Point2D::l2Distance(pi, pj));
+			}
+		}
+		edgeList.push_back(edgeList_i);
+	}
 
+	// Dijkstra's algorithm
+	std::vector<int> q0;
+	for (int i = 0; i < points.size(); i++) q0.push_back(i);
+
+	for (int i = 0; i < points.size(); i++) {
+		if (i % 10 == 0) std::cout << i << std::endl;
+		std::vector<PointState> pointsCopy = points;
+		std::vector<int> q = q0;
+		pointsCopy[i].dist = 0;
+
+		//q.push_back(i);
+		while (q.size() > 0) {
+			int qu = 0;
+			float minDist = pointsCopy[q[0]].dist;
+			for (int j = 0; j < q.size(); j++) {
+				if (pointsCopy[q[j]].dist < minDist) {
+					minDist = pointsCopy[q[j]].dist;
+					qu = j;
+				}
+			}
+
+			int u = q[qu];
+			q.erase(q.begin() + qu);
+
+			for (int j = 0; j < edgeList[u].e.size(); j++) {
+				int v = edgeList[u].e[j];
+				float alt = pointsCopy[u].dist + edgeList[u].w[j];
+				if (alt < pointsCopy[v].dist) {
+					pointsCopy[v].dist = alt;
+					pointsCopy[v].prev = u;
+				}
+			}
+		}
+
+		// Paste shortest paths to the map
+		for (int j = 0; j < pointsCopy.size(); j++) {
+			if (!points[i].isOb && !points[j].isOb) continue;
+			Point2D pi = points[i].p;
+			Point2D pj = points[j].p;
+			bool isEdge = true;
+			// |V|^2 * K 
+			for (auto ob : obs) {
+				if (ob.segIntersect(pi, pj)) {
+					isEdge = false;
+					break;
+				}
+			}
+			if (!isEdge) {
+				std::vector<int> key({ i,j });
+				ShortestPath stp;
+				stp.length = 0;
+				stp.path.push_back(j);
+				int k = j;
+				while (pointsCopy[k].prev != i) {
+					stp.path.insert(stp.path.begin(), pointsCopy[k].prev);
+					stp.length += Point2D::l2Distance(
+						pointsCopy[k].p,
+						pointsCopy[pointsCopy[k].prev].p
+					);
+					k = pointsCopy[k].prev;
+				}
+				stpMap.insert(std::pair<std::vector<int>, ShortestPath>(key, stp));
+			}
+		}
+	}
+}
 
 
 void Scenario::ecld2DType0DynamicNMCommon(
