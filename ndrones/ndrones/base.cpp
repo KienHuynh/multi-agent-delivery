@@ -19,7 +19,7 @@ Color::Color(unsigned char _r, unsigned char _g, unsigned char _b) {
 Color Color::HSV2RGB(float h, float s, float v) {
 	float c = s * v;
 	float h_ = h / 60.0;
-	h_ = h_ < 2 ? h_ : h_ - (float) 2*(((int)h_)/2);
+	h_ = h_ < 2 ? h_ : h_ - (float)2 * (((int)h_) / 2);
 	float x = c * (1.0 - abs(h_ - 1.0));
 	float m = v - c;
 	float r, g, b;
@@ -57,7 +57,7 @@ Color Color::HSV2RGB(float h, float s, float v) {
 	g = (g + m) * 255;
 	b = (b + m) * 255;
 
-	return Color((unsigned char) r, (unsigned char) g, (unsigned char) b);
+	return Color((unsigned char)r, (unsigned char)g, (unsigned char)b);
 }
 
 
@@ -70,7 +70,7 @@ void Palette::createPalette() {
 	for (int i = 0; i < cfg::numColor; i++) {
 		float h = ((float)i) * 360.0 / (float)cfg::numColor;
 		float s = ((i + 1) % 2 == 0) ? 1 : 0.7;
-		float v = (i %  2 == 0) ? 0.9 : 0.4;
+		float v = (i % 2 == 0) ? 0.9 : 0.4;
 		Color c = Color::HSV2RGB((int)h, s, v);
 		palette[i] = c;
 	}
@@ -186,6 +186,7 @@ bool Point2D::leftOn(Point2D a, Point2D b, Point2D c) {
 
 
 bool Point2D::colinear(Point2D a, Point2D b, Point2D c) {
+	if (a == b || a == c || b == c) return true;
 	return Area2(a, b, c) == 0;
 }
 
@@ -324,7 +325,7 @@ Agent::Agent(int _ID, Point2D _loc0, float _v) {
 
 Agent::Agent(int _ID, int _x, int _y, float _v, float _delay) {
 	ID = _ID;
-	
+
 	loc0.x = _x;
 	loc0.y = _y;
 	loc = loc0;
@@ -346,7 +347,7 @@ Agent::Agent(int _ID, int _x, int _y, float _v, float _delay) {
 
 Agent::Agent(int _ID, Point2D _loc0, float _v, float _delay) {
 	ID = _ID;
-	
+
 	loc0 = _loc0;
 	loc = loc0;
 	v = _v;
@@ -464,17 +465,17 @@ void SimplePolygon::findCVHull() {
 		deque.push_back(2);
 	}
 	int i = 3;
-	
+
 	while (i < points.size()) {
 		while (
 			Point2D::left(
-				points[deque[deque.size() - 2]], 
-				points[deque[deque.size() - 1]], 
-				points[i]) 
+				points[deque[deque.size() - 2]],
+				points[deque[deque.size() - 1]],
+				points[i])
 			&&
 			Point2D::left(
-				points[deque[0]], 
-				points[deque[1]], 
+				points[deque[0]],
+				points[deque[1]],
 				points[i])
 			) {
 			i = i + 1;
@@ -484,9 +485,9 @@ void SimplePolygon::findCVHull() {
 
 		while (
 			!Point2D::left(
-			points[deque[deque.size() - 2]],
-			points[deque[deque.size() - 1]], 
-			points[i])) {
+				points[deque[deque.size() - 2]],
+				points[deque[deque.size() - 1]],
+				points[i])) {
 			deque.pop_back();
 		}
 
@@ -523,6 +524,10 @@ bool SimplePolygon::contain(Point2D a) {
 		int i1 = (i + n - 1) % n;
 		LinkedPoint2D p1 = points[i];
 		LinkedPoint2D p2 = points[i1];
+		
+		// TODO:
+		if (p1 == a) return false;
+		
 		if (((p1.y > a.y) && (p2.y <= a.y)) ||
 			((p2.y > a.y) && (p1.y <= a.y))) {
 			float xq, yq = a.y;
@@ -538,11 +543,27 @@ bool SimplePolygon::contain(Point2D a) {
 }
 
 
+bool SimplePolygon::include(Point2D a) {
+	for (auto p : points) {
+		if (a == p) return true;
+	}
+	return false;
+}
+
+
 bool SimplePolygon::segIntersect(Point2D a, Point2D b) {
+	bool include_a = include(a);
+	bool include_b = include(b);
+	// This line doesn't work, and the loop below reject all the edges to obstacles' boundary
 	if ((contain(a) && !contain(b)) || (!contain(a) && contain(b))) return true;
+	
+	int intersectCount = 0;
 	for (int i = 0; i < points.size(); i++) {
 		int j = (i + 1) % points.size();
-		if (Point2D::intersect(a, b, points[i], points[i + 1])) return true;
+		
+		if (Point2D::intersect(a, b, points[i], points[j])) intersectCount++;
+		if (Point2D::intersectProp(a, b, points[i], points[j])) return true;
+		if (intersectCount >= 4 && !(include_a && include_b)) return true;
 	}
 	return false;
 }
@@ -563,6 +584,18 @@ bool SimplePolygon::diagonalie(int a, int b) {
 
 bool SimplePolygon::diagonal(int a, int b) {
 	return inCone(a, b) && inCone(b, a) && diagonalie(a, b);
+}
+
+
+bool SimplePolygon::diagonal(Point2D a, Point2D b) {
+	int ai = -1, bi = -1;
+	for (int i = 0; i < points.size(); i++) {
+		if (points[i] == a) ai = i;
+		if (points[i] == b) bi = i;
+	}
+	if (ai == -1 || bi == -1) return false;
+	if (ai < bi) return inCone(ai, bi) && inCone(bi, ai) && diagonalie(ai, bi);
+	else return inCone(ai, bi) && inCone(bi, ai) && diagonalie(bi, ai);
 }
 
 
@@ -594,14 +627,14 @@ void SimplePolygon::triangulate() {
 				v0 = pointsCopy[v1].prev;
 
 				triIdx.push_back(std::vector<int>({ v1, v2, v3 }));
-				
+
 				pointsCopy[v1].isEar = diagonal(v0, v3);
 				pointsCopy[v3].isEar = diagonal(v1, v4);
-				
+
 
 				pointsCopy[v1].next = v3;
 				pointsCopy[v3].prev = v1;
-				
+
 				start = v3;
 				n--;
 				break;
@@ -610,5 +643,22 @@ void SimplePolygon::triangulate() {
 		} while (v2 != start);
 	}
 	// Insert the last triangle
-	triIdx.push_back(std::vector<int>({ pointsCopy[start].prev, start, pointsCopy[start].next}));
+	triIdx.push_back(std::vector<int>({ pointsCopy[start].prev, start, pointsCopy[start].next }));
+}
+
+
+std::vector<size_t> argSort(const std::vector<PointState> &v) {
+
+	// initialize original index locations
+	std::vector<size_t> idx(v.size());
+	std::iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	// using std::stable_sort instead of std::sort
+	// to avoid unnecessary index re-orderings
+	// when v contains elements of equal values 
+	std::stable_sort(idx.begin(), idx.end(),
+		[&v](size_t i1, size_t i2) {return PointState::bestTimeLT(v[i1], v[i2]); });
+
+	return idx;
 }

@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <numeric> 
 #include <fstream>
 #include <cmath>
 #include <iostream>
@@ -17,7 +18,7 @@
 
 constexpr auto PI = 3.14156;
 
-enum Solver {ECLD_2D_DYNAMIC};
+enum Solver { ECLD_2D_DYNAMIC };
 
 
 class Agent;
@@ -133,6 +134,9 @@ public:
 	// Is on obstacle boundary
 	bool isOb;
 
+	// The index of the obstacle it belong to
+	int obIndex;
+
 	// For shortest path calculation
 	bool visited;
 	float dist;
@@ -163,6 +167,7 @@ public:
 	int prevMatching;
 	int currentMatching;
 	int nextMatching;
+	int gridRef;
 
 	// Initial location
 	Point2D loc0;
@@ -247,7 +252,7 @@ class SimplePolygon {
 public:
 	SimplePolygon(std::vector<LinkedPoint2D>);
 	SimplePolygon(std::vector<Point2D>);
-	
+
 	std::vector<LinkedPoint2D> points;
 	float perimeter;
 	// Hull point index, storing indices of hull points
@@ -267,8 +272,19 @@ public:
 	// @param[in] Point2D p
 	// @param[out] bool
 	bool contain(Point2D p);
+	
+	// Check if point is one of polygon points
+	// @param[in] Point2D p
+	// @param[out] bool
+	bool include(Point2D p);
 
 	// Check if a line segment intersect the polygon
+	// Note: this assumes the polygon is unbounded, therefore
+	// if the pair of points are actually a polygon edge, this will return false
+	// Additionally, if a line segment intersect inproperply with a polygon more than 4 times
+	// I also remove it
+	// TODO: need better condition for the improper intersection when the line is outside of the poly
+	// but touch the poly twice
 	// @param[in] Point2D a
 	// @param[in] Point2D b
 	bool segIntersect(Point2D a, Point2D b);
@@ -286,12 +302,17 @@ public:
 	// @param[out] bool
 	bool diagonalie(int a, int b);
 
-	// Return true if (a, b) is a diagonal
 	// Return true if (a, b) lies inside the polygon
 	// @param[in] int a, index of the point a in this.points
 	// @param[in] int b, index of the point b in this.points
 	// @param[out] bool
 	bool diagonal(int a, int b);
+
+	// Return true if (a, b) lies inside the polygon
+	// @param[in] Point2D a
+	// @param[in] Point2D b
+	// @param[out] bool
+	bool diagonal(Point2D a, Point2D b);
 
 	// Assign isEar = true for all vertices that are ear
 	void earInit();
@@ -324,3 +345,7 @@ public:
 	LineAnimation();
 	void setColor(int, int, int);
 };
+
+
+// Arg sort function to sort all points w.r.t their .bestTime
+std::vector<size_t> argSort(const std::vector<PointState> &v);
