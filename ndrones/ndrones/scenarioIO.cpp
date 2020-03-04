@@ -157,7 +157,7 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 
 		obstacles.push_back(polygon);
 	}
-	scenario.obstacles = obstacles;
+	scenario.obs = obstacles;
 
 	// Eliminate points inside the obstacles
 	for (auto o : obstacles) {
@@ -176,8 +176,11 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 			Point2D p0(o.points[i].x, o.points[i].y);
 			Point2D p1;
 			p1 = o.points[(i + 1) % o.points.size()];
-			if (!scenario.containPoint(p0))
+			if (!scenario.containPoint(p0)) {
+				PointState ps(p0);
+				ps.isOb = true;
 				scenario.points.push_back(p0);
+			}
 
 			float length = Point2D::l2Distance(p0, p1);
 			int nNewPoint_i = (int) (length * nNewPoint / o.perimeter);
@@ -186,11 +189,18 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 				float newX = p0.x + ratio * (p1.x - p0.x);
 				float newY = p0.y + ratio * (p1.y - p0.y);
 				Point2D newP(newX, newY);
-				if (!scenario.containPoint(newP))
-					scenario.points.push_back(Point2D(newX, newY));
+
+				if (!scenario.containPoint(newP)) {
+					PointState ps(Point2D(newX, newY));
+					ps.isOb = true;
+					scenario.points.push_back(ps);
+				}
 			}
 		}
 	}
+
+	// Construct the graph and pre-compute pairwise distance between all necessary points
+	scenario.constructSTPMap();
 }
 
 
