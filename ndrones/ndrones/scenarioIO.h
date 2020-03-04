@@ -63,6 +63,17 @@ public:
 		Scenario &scenario,
 		int nDPoint);
 
+
+	// Load agents into scenario
+	// @param[out] myfile ifstream object with the input file already loaded.
+	// @param[in] Scenario scenario.
+	// @param[in] int nAgents number of agents
+	static void loadAgent(
+		std::ifstream &myfile,
+		Scenario &scenario,
+		int nAgents
+	);
+
 	// Load obstacles into scenario
 	// @param[out] myfile ifstream object with the input file already loaded.
 	// @param[in] Scenario scenario.

@@ -133,6 +133,40 @@ void ScenarioIO::loadDesignatedPolygon(
 }
 
 
+void ScenarioIO::loadAgent(std::ifstream &myfile,
+	Scenario &scenario,
+	int nAgents) {
+	scenario.maxSpeed = -1;
+	scenario.minSpeed = -1;
+
+	for (int i = 0; i < nAgents; i++) {
+		float x, y;
+		float v;
+		myfile >> x >> y >> v;
+		if (scenario.maxSpeed == -1) {
+			scenario.maxSpeed = v;
+			scenario.minSpeed = v;
+		}
+		if (v > scenario.maxSpeed) {
+			scenario.maxSpeed = v;
+		}
+		if (v < scenario.minSpeed) {
+			scenario.minSpeed = v;
+		}
+
+		Agent a(i, x, y, v);
+
+		Point2D p(x, y);
+		if (!scenario.containPoint(p)) {
+			scenario.points.push_back(p);
+			a.gridRef = scenario.points.size() - 1;
+		}
+		scenario.agents.push_back(a);
+		scenario.updateMinMaxXY(x, y);
+	}
+}
+
+
 void ScenarioIO::loadObstacle(std::ifstream &myfile,
 	Scenario &scenario,
 	int nObs) {
@@ -160,7 +194,8 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 	scenario.obs = obstacles;
 
 	// Eliminate points inside the obstacles
-	for (auto o : obstacles) {
+	for (int oi = 0; oi < obstacles.size(); oi++) {
+		SimplePolygon o = obstacles[oi];
 		int count = 0;
 		for (int i = scenario.points.size()-1; i >= 0; i--)
 		{
@@ -176,26 +211,54 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 			Point2D p0(o.points[i].x, o.points[i].y);
 			Point2D p1;
 			p1 = o.points[(i + 1) % o.points.size()];
+
 			if (!scenario.containPoint(p0)) {
 				PointState ps(p0);
 				ps.isOb = true;
-				scenario.points.push_back(p0);
+				ps.obIndex = oi;
+				scenario.points.push_back(ps);
 			}
+			
+			//float length = Point2D::l2Distance(p0, p1);
+			//int nNewPoint_i = (int) (length * nNewPoint / o.perimeter);
+			//for (int j = 0; j < nNewPoint_i; j++) {
+			//	float ratio = ((float)(j + 1)) / ((float)(nNewPoint_i + 2));
+			//	float newX = p0.x + ratio * (p1.x - p0.x);
+			//	float newY = p0.y + ratio * (p1.y - p0.y);
+			//	Point2D newP(newX, newY);
 
-			float length = Point2D::l2Distance(p0, p1);
-			int nNewPoint_i = (int) (length * nNewPoint / o.perimeter);
-			for (int j = 0; j < nNewPoint_i; j++) {
-				float ratio = ((float)(j + 1)) / ((float)(nNewPoint_i + 2));
-				float newX = p0.x + ratio * (p1.x - p0.x);
-				float newY = p0.y + ratio * (p1.y - p0.y);
-				Point2D newP(newX, newY);
+			//	/*float eps = o.perimeter / 100;
+			//	for (int r = 0; r < 4; r++) {
+			//		Point2D newPtmp = newP;
+			//		if (r == 0) {
+			//			newPtmp.x += eps;
+			//			newPtmp.y += eps;
+			//		}
+			//		if (r == 1) {
+			//			newPtmp.x -= eps;
+			//			newPtmp.y += eps;
+			//		}
+			//		if (r == 2) {
+			//			newPtmp.x += eps;
+			//			newPtmp.y -= eps;
+			//		}
+			//		if (r == 3) {
+			//			newPtmp.x -= eps;
+			//			newPtmp.y -= eps;
+			//		}
+			//		if (!o.contain(newPtmp)) {
+			//			newP = newPtmp;
+			//			break;
+			//		}
+			//	}*/
 
-				if (!scenario.containPoint(newP)) {
-					PointState ps(Point2D(newX, newY));
-					ps.isOb = true;
-					scenario.points.push_back(ps);
-				}
-			}
+			//	if (!scenario.containPoint(newP)) {
+			//		PointState ps(Point2D(newX, newY));
+			//		ps.isOb = true;
+			//		// ps.obIndex = oi;
+			//		scenario.points.push_back(ps);
+			//	}
+			//}
 		}
 	}
 
@@ -256,27 +319,8 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 
 	// Read agents' info
 	myfile >> nAgent;
-	scenario.maxSpeed = -1;
-	scenario.minSpeed = -1;
-	for (int i = 0; i < nAgent; i++) {
-		int x, y;
-		float v;
-		myfile >> x >> y >> v;
-		if (scenario.maxSpeed == -1) {
-			scenario.maxSpeed = v;
-			scenario.minSpeed = v;
-		}
-		if (v > scenario.maxSpeed) {
-			scenario.maxSpeed = v;
-		}
-		if (v < scenario.minSpeed) {
-			scenario.minSpeed = v;
-		}
+	loadAgent(myfile, scenario, nAgent);
 
-		Agent a(i, x, y, v);
-		scenario.agents.push_back(a);
-		scenario.updateMinMaxXY(x, y);
-	}
 	// Sort the agents by speed
 	std::sort(scenario.agents.begin(), scenario.agents.end());
 
@@ -311,7 +355,8 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 	std::ofstream myfile;
 	myfile.open(outputFile);
 
-	myfile << scenario.overallTime << std::endl;
+	// TODO
+	/*myfile << scenario.overallTime << std::endl;
 	myfile << scenario.points.size() << std::endl;
 	for (int a = 0; a < scenario.activeID.size(); a++) {
 		int pairID = scenario.activeID[a];
@@ -327,7 +372,7 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 			myfile << scenario.bestPointQueues[a][p].x << " " << scenario.bestPointQueues[a][p].y << std::endl;
 		}
 		myfile << scenario.bestTargets[a].loc.x << " " << scenario.bestTargets[a].loc.y << std::endl;
-	}
+	}*/
 
 	myfile.close();
 }
