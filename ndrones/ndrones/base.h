@@ -130,6 +130,14 @@ public:
 	// Is true if this is a DesignatedPoint (package, target, etc.). Assigned when loading file.
 	bool isDesignatedPoint;
 
+	// Is on obstacle boundary
+	bool isOb;
+
+	// For shortest path calculation
+	bool visited;
+	float dist;
+	int prev;
+
 	std::vector<Agent> agentQueue;
 	// Queue of points that were previously visited by the above agents
 	// Example:
@@ -259,6 +267,11 @@ public:
 	// @param[in] Point2D p
 	// @param[out] bool
 	bool contain(Point2D p);
+
+	// Check if a line segment intersect the polygon
+	// @param[in] Point2D a
+	// @param[in] Point2D b
+	bool segIntersect(Point2D a, Point2D b);
 
 	// Return true if (a, b) lies inside the polygon
 	// @param[in] Point2D a

@@ -169,6 +169,83 @@ void Point2D::operator = (LinkedPoint2D const&obj) {
 }
 
 
+float Point2D::Area2(Point2D a, Point2D b, Point2D c) {
+	return (b.x - a.x)*(c.y - a.y) -
+		(c.x - a.x)*(b.y - a.y);
+}
+
+
+bool Point2D::left(Point2D a, Point2D b, Point2D c) {
+	return Area2(a, b, c) > 0;
+}
+
+
+bool Point2D::leftOn(Point2D a, Point2D b, Point2D c) {
+	return Area2(a, b, c) >= 0;
+}
+
+
+bool Point2D::colinear(Point2D a, Point2D b, Point2D c) {
+	return Area2(a, b, c) == 0;
+}
+
+
+bool SimplePolygon::inCone(int a, int b) {
+	int n = points.size();
+	int a0 = points[a].prev;
+	int a1 = points[a].next;
+
+	if (Point2D::leftOn(points[a], points[a1], points[a0])) {
+		return Point2D::left(points[a], points[b], points[a0])
+			&& Point2D::left(points[b], points[a], points[a1]);
+	}
+
+	return !(Point2D::leftOn(points[a], points[b], points[a1])
+		&& Point2D::leftOn(points[b], points[a], points[a0]));
+}
+
+
+bool Point2D::between(Point2D a, Point2D b, Point2D c) {
+	int ba, ca;
+	if (!colinear(a, b, c)) return false;
+
+	if (a.x != b.x)
+		return
+		((a.x <= c.x) && (c.x <= b.x)) ||
+		((a.x >= c.x) && (c.x >= b.x));
+	else
+		return
+		((a.y <= c.y) && (c.y <= b.y)) ||
+		((a.y >= c.y) && (c.y >= b.y));
+}
+
+
+bool Point2D::intersectProp(Point2D a, Point2D b, Point2D c, Point2D d) {
+	if (colinear(a, b, c) ||
+		colinear(a, b, d) ||
+		colinear(c, d, a) ||
+		colinear(c, b, d)) return false;
+
+	return
+		(!(left(a, b, c)) ^ !(left(a, b, d))) &&
+		(!(left(c, d, a)) ^ !(left(c, d, b)));
+}
+
+
+bool Point2D::intersect(Point2D a, Point2D b, Point2D c, Point2D d) {
+	if (intersectProp(a, b, c, d)) {
+		return true;
+	}
+	else if (
+		between(a, b, c) || between(a, b, d) ||
+		between(c, d, a) || between(c, d, b)
+		)
+		return true;
+
+	return false;
+}
+
+
 bool PointState::bestTimeLT(PointState a, PointState b) {
 	return a.bestTime < b.bestTime;
 }
@@ -178,6 +255,10 @@ PointState::PointState(Point2D _p) {
 	p = _p;
 	bestTime = -1;
 	isDesignatedPoint = false;
+	isOb = false;
+	visited = false;
+	dist = INFINITY;
+	prev = -1;
 }
 
 
@@ -457,79 +538,12 @@ bool SimplePolygon::contain(Point2D a) {
 }
 
 
-float Point2D::Area2(Point2D a, Point2D b, Point2D c) {
-	return (b.x - a.x)*(c.y - a.y) -
-		(c.x - a.x)*(b.y - a.y);
-}
-
-
-bool Point2D::left(Point2D a, Point2D b, Point2D c) {
-	return Area2(a, b, c) > 0;
-}
-
-
-bool Point2D::leftOn(Point2D a, Point2D b, Point2D c) {
-	return Area2(a, b, c) >= 0;
-}
-
-
-bool Point2D::colinear(Point2D a, Point2D b, Point2D c) {
-	return Area2(a, b, c) == 0;
-}
-
-
-bool SimplePolygon::inCone(int a, int b) {
-	int n = points.size();
-	int a0 = points[a].prev;
-	int a1 = points[a].next;
-	
-	if (Point2D::leftOn(points[a], points[a1], points[a0])) {
-		return Point2D::left(points[a], points[b], points[a0]) 
-			&& Point2D::left(points[b], points[a], points[a1]);
+bool SimplePolygon::segIntersect(Point2D a, Point2D b) {
+	if ((contain(a) && !contain(b)) || (!contain(a) && contain(b))) return true;
+	for (int i = 0; i < points.size(); i++) {
+		int j = (i + 1) % points.size();
+		if (Point2D::intersect(a, b, points[i], points[i + 1])) return true;
 	}
-
-	return !(Point2D::leftOn(points[a], points[b], points[a1]) 
-		&& Point2D::leftOn(points[b], points[a], points[a0]));
-}
-	
-
-bool Point2D::between(Point2D a, Point2D b, Point2D c) {
-	int ba, ca;
-	if (!colinear(a, b, c)) return false;
-
-	if (a.x != b.x)
-		return
-		((a.x <= c.x) && (c.x <= b.x)) ||
-		((a.x >= c.x) && (c.x >= b.x));
-	else
-		return
-		((a.y <= c.y) && (c.y <= b.y)) ||
-		((a.y >= c.y) && (c.y >= b.y));
-}
-
-
-bool Point2D::intersectProp(Point2D a, Point2D b, Point2D c, Point2D d) {
-	if (colinear(a, b, c) ||
-		colinear(a, b, d) ||
-		colinear(c, d, a) ||
-		colinear(c, b, d)) return false;
-
-	return 
-		(!(left(a, b, c)) ^ !(left(a, b, d))) &&
-		(!(left(c, d, a)) ^ !(left(c, d, b)));
-}
-
-
-bool Point2D::intersect(Point2D a, Point2D b, Point2D c, Point2D d) {
-	if (intersectProp(a, b, c, d)) {
-		return true;
-	}
-	else if (
-		between(a, b, c) || between(a, b, d) ||
-		between(c, d, a) || between(c, d, b)
-		)
-		return true;
-
 	return false;
 }
 
