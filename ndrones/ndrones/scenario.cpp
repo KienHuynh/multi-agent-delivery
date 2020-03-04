@@ -41,7 +41,7 @@ Color Scenario::agentQueueColorMap(std::vector<Agent> _agents) {
 		seed += _agents[i].ID*_agents[i].loc.x + _agents[i].loc.y;
 	}
 	srand(seed);
-	int id = (rand()+1111) % cfg::numColor;
+	int id = (rand() + 1111) % cfg::numColor;
 	return Palette::palette[id];
 }
 
@@ -59,7 +59,7 @@ Color Scenario::bestTimeColorMap(float s, float l, float t) {
 
 
 Color Scenario::depotColorMap(DesignatedPoint dp) {
-	srand(dp.ID*(int)dp.loc.x+(int)dp.loc.y);
+	srand(dp.ID*(int)dp.loc.x + (int)dp.loc.y);
 	int x = rand() % cfg::numColor;
 	/*std::cout << x << " " << (int)Palette::palette[x].r << " " <<
 		(int) Palette::palette[x].g << " " <<
@@ -76,6 +76,37 @@ bool Scenario::containPoint(Point2D p) {
 }
 
 
+std::vector<Point2D> Scenario::indices2Point2D(std::vector<int> indices) {
+	std::vector<Point2D> v;
+	for (auto i : indices) {
+		v.push_back(points[i].p);
+	}
+	return v;
+}
+
+
+float Scenario::timing(Agent a, int i) {
+	ShortestPath stp = geodesicL2Distance(a.gridRef, i);
+	return (stp.length / a.v);
+}
+
+
+float Scenario::timing(Agent a, int i, int j) {
+	ShortestPath stp = geodesicL2Distance(i, j);
+	return (stp.length / a.v);
+}
+
+
+float Scenario::timing(Agent agent, Point2D a, Point2D b) {
+	int ai, bi;
+	for (int k = 0; k < points.size(); k++) {
+		if (points[k].p == a) ai = k;
+		if (points[k].p == b) bi = k;
+	}
+	return timing(agent, ai, bi);
+}
+
+
 bool Scenario::isDesignatedPoint(PointState ps) {
 	return ps.isDesignatedPoint;
 }
@@ -83,8 +114,8 @@ bool Scenario::isDesignatedPoint(PointState ps) {
 
 Scenario::ShortestPath Scenario::geodesicL2Distance(int a, int b) {
 	ShortestPath stp;
-	std::map<std::vector<int>, ShortestPath>::iterator it = 
-		stpMap.find(std::vector<int>({a, b}));
+	std::map<std::vector<int>, ShortestPath>::iterator it =
+		stpMap.find(std::vector<int>({ a, b }));
 
 	// Straight line
 	if (it == stpMap.end()) {
@@ -99,19 +130,33 @@ Scenario::ShortestPath Scenario::geodesicL2Distance(int a, int b) {
 }
 
 
+Scenario::ShortestPath Scenario::geodesicL2Distance(Point2D a, Point2D b) {
+	int ai, bi;
+	for (int k = 0; k < points.size(); k++) {
+		if (points[k].p == a) ai = k;
+		if (points[k].p == b) bi = k;
+	}
+	return geodesicL2Distance(ai, bi);
+}
+
+
 void Scenario::constructSTPMap() {
 	// If there is no obstacle, we can use L2 distance for everything
 	// and there is no need for a graph
 	if (obs.size() == 0) return;
-	
+
 	// Construct the graph
 	// NOTE: at this point, all points inside the obstacles should have been removed
 	// The SimplePolygon::segIntersect function still check for the cases where
 	// a point lies inside the polygon just in case
+	EdgeList* edgeListArr = new EdgeList[points.size()];
 	for (int i = 0; i < points.size(); i++) {
 		EdgeList edgeList_i;
-		for (int j = 0; j < points.size(); j++) {
+		for (int j = i + 1; j < points.size(); j++) {
+			EdgeList edgeList_j;
 			if (!points[i].isOb && !points[j].isOb) continue;
+			if (i == j) continue;
+
 			Point2D pi = points[i].p;
 			Point2D pj = points[j].p;
 			bool isEdge = true;
@@ -122,18 +167,32 @@ void Scenario::constructSTPMap() {
 					isEdge = false;
 					break;
 				}
+				else if (ob.diagonal(pi, pj)) {
+					isEdge = false;
+					break;
+				}
 			}
+
 			if (isEdge) {
 				edgeList_i.e.push_back(j);
 				edgeList_i.w.push_back(Point2D::l2Distance(pi, pj));
+				
+				edgeList_j.e.push_back(i);
+				edgeList_j.w.push_back(Point2D::l2Distance(pi, pj));
+				edgeListArr[j].e.insert(edgeListArr[j].e.end(), edgeList_j.e.begin(), edgeList_j.e.end());
+				edgeListArr[j].w.insert(edgeListArr[j].w.end(), edgeList_j.w.begin(), edgeList_j.w.end());
 			}
 		}
-		edgeList.push_back(edgeList_i);
+		edgeListArr[i].e.insert(edgeListArr[i].e.end(), edgeList_i.e.begin(), edgeList_i.e.end());
+		edgeListArr[i].w.insert(edgeListArr[i].w.end(), edgeList_i.w.begin(), edgeList_i.w.end());
 	}
 
 	// Dijkstra's algorithm
 	std::vector<int> q0;
-	for (int i = 0; i < points.size(); i++) q0.push_back(i);
+	for (int i = 0; i < points.size(); i++) {
+		q0.push_back(i);
+		edgeList.push_back(edgeListArr[i]);
+	}
 
 	for (int i = 0; i < points.size(); i++) {
 		if (i % 10 == 0) std::cout << i << std::endl;
@@ -166,8 +225,9 @@ void Scenario::constructSTPMap() {
 		}
 
 		// Paste shortest paths to the map
-		for (int j = 0; j < pointsCopy.size(); j++) {
-			if (!points[i].isOb && !points[j].isOb) continue;
+		for (int j = 0; j < points.size(); j++) {
+			if (j == i) continue;
+
 			Point2D pi = points[i].p;
 			Point2D pj = points[j].p;
 			bool isEdge = true;
@@ -186,16 +246,16 @@ void Scenario::constructSTPMap() {
 				int k = j;
 				while (pointsCopy[k].prev != i) {
 					stp.path.insert(stp.path.begin(), pointsCopy[k].prev);
-					stp.length += Point2D::l2Distance(
-						pointsCopy[k].p,
-						pointsCopy[pointsCopy[k].prev].p
-					);
 					k = pointsCopy[k].prev;
 				}
+				stp.length = pointsCopy[j].dist;
+
 				stpMap.insert(std::pair<std::vector<int>, ShortestPath>(key, stp));
 			}
 		}
 	}
+
+	delete[] edgeListArr;
 }
 
 
@@ -212,7 +272,11 @@ void Scenario::ecld2DType0DynamicNMCommon(
 		int bestPackageID = -1;
 		for (int ip = 0; ip < _packages.size(); ip++) {
 			PointState ps_ip = _points[_packages[ip].gridRef];
-			float time = _agents[0].timing(ps_ip.p) + _agents[0].timing(ps_ip.p, _points[i].p) + _agents[0].delay;
+			int ps_ipGridRef = _packages[ip].gridRef;
+			float time = timing(_agents[0], ps_ipGridRef) +
+				timing(_agents[0], ps_ipGridRef, i) + 
+				_agents[0].delay;
+			// float time = _agents[0].timing(ps_ip.p) + _agents[0].timing(ps_ip.p, _points[i].p) + _agents[0].delay;
 
 			if (bestTime == -1 || bestTime > time) {
 				bestTime = time;
@@ -224,14 +288,14 @@ void Scenario::ecld2DType0DynamicNMCommon(
 		_points[i].bestTime = bestTime;
 		_points[i].pointQueue.push_back(_points[bestPackageID].p);
 	}
-	
+
 	for (int k = 1; k < _agents.size(); k++) {
 		std::cout << k << std::endl;
 		std::vector<PointState> pointsCopy = _points;
-		
-		// Sort the pointsCopy by their best time
-		std::sort(pointsCopy.begin(), pointsCopy.end(), PointState::bestTimeLT);
 
+		// Sort the pointsCopy by their best time
+		std::vector<size_t> indices = argSort(pointsCopy);
+		
 		for (int i = 0; i < _points.size(); i++) {
 			if (isPackage(i, _packages)) continue;
 
@@ -240,14 +304,16 @@ void Scenario::ecld2DType0DynamicNMCommon(
 
 			int best_j = -1;
 			// Find the best handoff point j so that it can travel to i in the shortest time
-			for (int j = 0; j < pointsCopy.size(); j++) {
-				if (pointsCopy[j].bestTime > _points[i].bestTime) break;
+			for (auto j: indices) {
+				if (i == j) continue;
 
-				float timeTo_j = _agents[k].timing(pointsCopy[j].p) + _agents[k].delay;
+				if (pointsCopy[j].bestTime > _points[i].bestTime) break;
+				float timeTo_j = timing(_agents[k], j) + _agents[k].delay;
+
 				// Factor in waiting time
 				timeTo_j = max(timeTo_j, pointsCopy[j].bestTime);
-
-				float time_jTo_i = _agents[k].timing(pointsCopy[j].p, _points[i].p);
+				float time_jTo_i = timing(_agents[k], j, i);
+				
 				if (timeTo_j + time_jTo_i < _points[i].bestTime) {
 					_points[i].bestTime = timeTo_j + time_jTo_i;
 					best_j = j;
@@ -271,7 +337,7 @@ void Scenario::ecld2DType0DynamicNM() {
 	bestPointQueues = new std::vector<Point2D>;
 	bestTargets = new DesignatedPoint;
 	bestTimes = new float;
-	
+
 	DesignatedPoint bestTarget = findBestTarget(points, targets);
 
 	bestAgentQueues[0] = points[bestTarget.gridRef].agentQueue;
@@ -368,13 +434,13 @@ float Scenario::maxValWithoutK(float *arr, int size, int k) {
 	if (size == 1) return -1;
 	float m = 0;
 	float *copy = new float[size];
-	
+
 	for (int i = 0; i < size; i++) copy[i] = arr[i];
 	std::sort(copy, copy + size);
-	
+
 	if (arr[k] == copy[size - 1]) m = copy[size - 2];
 	else m = copy[size - 1];
-	
+
 	delete copy;
 
 	return m;
@@ -386,7 +452,7 @@ void Scenario::updateReusedAgent(std::vector<Agent> & _agents, std::vector<Point
 	for (int i = 0; i < _agents.size(); i++) {
 		float timeToPoint_i = max(prevTime, _agents[i].timing(_pointQueue[i]) + _agents[i].delay);
 		float time_iToHandOff = _agents[i].timing(_pointQueue[i], _pointQueue[i + 1]);
-		
+
 		prevTime = timeToPoint_i + time_iToHandOff;
 		if (i < _agents.size() - 1) {
 			prevTime = max(prevTime, _agents[i + 1].delay + _agents[i + 1].timing(_pointQueue[i + 1]));
@@ -430,12 +496,12 @@ bool Scenario::containAgentAfterOrder(std::vector<Agent> _agents, Agent a) {
 bool Scenario::conflictResolve(
 	std::vector<PointState> _points,
 	std::vector<Agent> _agents,
-	std::vector<DesignatedPoint>* _packagesOfID, 
+	std::vector<DesignatedPoint>* _packagesOfID,
 	std::vector<DesignatedPoint>* _targetsOfID,
-	std::vector<int> _activeID, 
+	std::vector<int> _activeID,
 	int** _agentAssignment,
 	float* _bestTimes,
-	int &bestMatchingInd, 
+	int &bestMatchingInd,
 	int &bestAgentInd) {
 
 	//// TODO: improve this block of codes
@@ -481,11 +547,11 @@ bool Scenario::conflictResolve(
 		for (int a = 0; a < _activeID.size(); a++) {
 			if (_agentAssignment[a][k] == 1) matchingInd.push_back(a);
 		}
-		
+
 		// Compute the solution without the i-th agent for each matching found above
 		if (matchingInd.size() <= 1) continue;
 		else {
-			for (const auto a: matchingInd) {
+			for (const auto a : matchingInd) {
 				std::vector<Agent> agentsCopy = _agents;
 				std::vector<PointState> pointsCopy = _points;
 
@@ -513,7 +579,7 @@ bool Scenario::conflictResolve(
 					bestTimesWithout_k[a][k] = findBestTimeFromTargets(pointsCopy, _targetsOfID[a]);
 				}
 			}
-			
+
 			for (const auto a1 : matchingInd) {
 				float maxVal = -1;
 				for (const auto a2 : matchingInd) {
@@ -629,7 +695,7 @@ bool Scenario::equalAgentQueue(std::vector<Agent>* qA, std::vector<Agent>* qB) {
 	for (int a = 0; a < activeID.size(); a++) {
 		if (qA[a].size() == qB[a].size()) {
 			for (int k = 0; k < qA[a].size(); k++) {
-				if (qA[a][k].ID != qB[a][k].ID || 
+				if (qA[a][k].ID != qB[a][k].ID ||
 					qA[a][k].orderOfEx != qB[a][k].orderOfEx ||
 					qA[a][k].delay != qB[a][k].delay) return false;
 			}
@@ -667,7 +733,7 @@ void Scenario::ecld2DType1DynamicNM() {
 	std::vector<Agent>* prevBestAgentQueues = new std::vector<Agent>[activeID.size()];
 	bestAgentQueues = new std::vector<Agent>[activeID.size()];
 	bestPointQueues = new std::vector<Point2D>[activeID.size()];
-	
+
 	bestTargets = new DesignatedPoint[activeID.size()];
 	bestTimes = new float[activeID.size()];
 
@@ -685,12 +751,12 @@ void Scenario::ecld2DType1DynamicNM() {
 		std::copy_if(targets.begin(), targets.end(), std::back_inserter(targetsOfID[a]),
 			[&](DesignatedPoint p) {return p.ID == activeID[a]; });
 	}
-	
+
 	std::vector<PointState> pointsCopy;
 	std::vector<Agent> newAgents, agentsCopy, agentsCopyWithout_k;
 
 	newAgents = agents;
-	
+
 	/*for (int k = 0; k < agents.size(); k++) {
 		orderOfExecutionQueue[k].push_back(agents[k]);
 	}*/
@@ -699,7 +765,7 @@ void Scenario::ecld2DType1DynamicNM() {
 	bool stop = false;
 	bool mainLoopStop = false;
 	int loop = 0;
-	while(!mainLoopStop) {
+	while (!mainLoopStop) {
 		std::vector<Agent>* orderOfExecutionQueue;
 		orderOfExecutionQueue = new std::vector<Agent>[agents.size()];
 
@@ -849,7 +915,7 @@ void Scenario::ecld2DType1DynamicNM() {
 				// Matching 1 gets assigned with a new drone, this affects fin time t1, maing it t1'
 				// Now there is a difference between finTime of A at (i-1)-th and delayTime of A at i-th.
 				if (orderOfExecutionQueue[k][i].delay != orderOfExecutionQueue[k][i - 1].finTime) {
-					Agent tmp = orderOfExecutionQueue[k][i-1];
+					Agent tmp = orderOfExecutionQueue[k][i - 1];
 
 					// Remove all instances of this agent k with orderOfEx i-th onward
 					for (int a = 0; a < activeID.size(); a++) {
@@ -883,7 +949,7 @@ void Scenario::ecld2DType1DynamicNM() {
 			if (tmpAgents[k].orderOfEx - gapIndex > 1) {
 				if (gapIndex < 0) tmpAgents[k] = agents[k];
 				else tmpAgents[k] = orderOfExecutionQueue[k][gapIndex];
-			}	
+			}
 		}
 
 		for (int a = 0; a < activeID.size(); a++) {
@@ -962,37 +1028,73 @@ void Scenario::createDroneAnimation() {
 			int matchID = activeID[a];
 			int aniSize = droneAnis.size();
 			float bestTime = points[bestTargets[a].gridRef].bestTime;
-
+			float totalDelay = 0;
+			
 			for (int i = 0; i < bestAgentQueues[a].size(); i++) {
 				int color = 255 * (bestAgentQueues[a][i].v - minSpeed) / (maxSpeed - minSpeed);
-				LineAnimation tmpAni0, tmpAni1;
+
+				// This is used to store every animation
+				// There is no time-wise relation between the elements
 				std::vector<LineAnimation> tmpAni;
-				
-				tmpAni0.setColor(25, 25, color);
-				tmpAni1.setColor(25, 25, color);
 
-				tmpAni0.start = bestAgentQueues[a][i].loc0;
-				tmpAni0.end = bestPointQueues[a][i];
-				tmpAni0.startTime = bestAgentQueues[a][i].delay;
-				tmpAni0.endTime = tmpAni0.startTime +
-					bestAgentQueues[a][i].timing(tmpAni0.start, tmpAni0.end);
-				tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
-
-				tmpAni1.start = tmpAni0.end;
-				tmpAni1.end = bestPointQueues[a][i + 1];
-				tmpAni1.startTime = tmpAni0.endTime;
-				tmpAni1.endTime = tmpAni1.startTime +
-					bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
-				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
+				// This animation is for the i-th drone to fly from its loc0 to the meeting point
+				// There shouldn't be any delay
+				// First, get the shorest path from loc0 to the meeting point
+				ShortestPath stp = geodesicL2Distance(bestAgentQueues[a][i].loc0,
+					bestPointQueues[a][i]);
+				std::vector<Point2D> stpPoint = indices2Point2D(stp.path);
+				stpPoint.insert(stpPoint.begin(), bestAgentQueues[a][i].loc0);
 				
+				float prevTime = bestAgentQueues[a][i].delay;
+				for (int j = 0; j < stpPoint.size()-1; j++) {
+					LineAnimation tmpAni0;
+					tmpAni0.setColor(25, 25, color);
+					tmpAni0.start = stpPoint[j];
+					tmpAni0.end = stpPoint[j+1];
+					tmpAni0.startTime = prevTime;
+					tmpAni0.endTime = tmpAni0.startTime +
+						timing(bestAgentQueues[a][i], tmpAni0.start, tmpAni0.end);
+					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+					tmpAni.push_back(tmpAni0);
+
+					prevTime = tmpAni0.endTime;
+				}
+
+				// This animation is for the i-th drone to fly from the previous meeting point
+				// to a new one
+				// There could be a delay here as this drone might have to wait for a
+				// slower one to arrive
+				stp = geodesicL2Distance(tmpAni[tmpAni.size()-1].end,
+					bestPointQueues[a][i+1]);
+				stpPoint = indices2Point2D(stp.path);
+				stpPoint.insert(stpPoint.begin(), tmpAni[tmpAni.size() - 1].end);
+				
+				prevTime = totalDelay > prevTime ?
+					totalDelay : prevTime;
+
+				for (int j = 0; j < stpPoint.size()-1; j++) {
+					LineAnimation tmpAni0;
+					tmpAni0.setColor(25, 25, color);
+					tmpAni0.start = stpPoint[j];
+					tmpAni0.end = stpPoint[j + 1];
+					tmpAni0.startTime = prevTime;
+					tmpAni0.endTime = tmpAni0.startTime +
+						timing(bestAgentQueues[a][i], tmpAni0.start, tmpAni0.end);
+					tmpAni0.duration = tmpAni0.endTime - tmpAni0.startTime;
+					tmpAni.push_back(tmpAni0);
+
+					prevTime = tmpAni0.endTime;
+				}
+				totalDelay = prevTime;
+				droneAnis.insert(droneAnis.end(), tmpAni.begin(), tmpAni.end());
 				// These are only specific to this problem only because we know that each agent only generates 2 animations
-				tmpAni1.prevAni.push_back(i * 2 + aniSize);
+				/*tmpAni1.prevAni.push_back(i * 2 + aniSize);
 				if (i > 0) tmpAni1.prevAni.push_back((i - 1) * 2 + 1 + aniSize);
 				droneAnis.push_back(tmpAni0);
-				droneAnis.push_back(tmpAni1);
+				droneAnis.push_back(tmpAni1);*/
 			}
 			// Do another run to add waiting time
-			for (int i = 1; i < droneAnis.size(); i++) {
+			/*for (int i = 1; i < droneAnis.size(); i++) {
 				if (droneAnis[i].prevAni.size() == 0) continue;
 				float maxPrevTime = droneAnis[droneAnis[i].prevAni[0]].endTime;
 
@@ -1004,7 +1106,7 @@ void Scenario::createDroneAnimation() {
 				if (diff < 0) continue;
 				droneAnis[i].startTime += diff;
 				droneAnis[i].endTime += diff;
-			}
+			}*/
 		}
 	}
 }
@@ -1035,7 +1137,7 @@ void Scenario::createPackageAnimation() {
 				tmpAni1.endTime = tmpAni1.startTime +
 					bestAgentQueues[a][i].timing(tmpAni1.start, tmpAni1.end);
 				tmpAni1.duration = tmpAni1.endTime - tmpAni1.startTime;
-				
+
 				// These are only specific to this problem only because we know that each agent only generates 2 animations
 				// tmpAni1.prevAni.push_back(i * 2 + aniSize);
 				if (i > 0) tmpAni1.prevAni.push_back(i - 1 + aniSize);

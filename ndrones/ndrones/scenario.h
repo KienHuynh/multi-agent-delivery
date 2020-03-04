@@ -141,6 +141,32 @@ public:
 	// @return bool
 	bool containPoint(Point2D p);
 
+	// Compute the time it takes for agent to fly from its loc to i
+	// Use geodesic/graph distance as needed
+	// @param[in] Agent a
+	// @param[in] int i
+	// @param[out] float
+	float timing(Agent, int);
+
+	// Compute the time it takes for agent to fly from i to j
+	// Use geodesic/graph distance as needed
+	// @param[in] Agent a
+	// @param[in] int i
+	// @param[in] int j
+	// @param[out] float
+	float timing(Agent, int, int);
+
+	// Compute the time it takes for agent to fly from a to b
+	// Use geodesic/graph distance as needed
+	// @param[in] Agent a
+	// @param[in] Point2D i
+	// @param[in] Point2D j
+	// @param[out] float
+	float timing(Agent, Point2D, Point2D);
+
+	// Get std::vector<Point2D> from std::vector<int>
+	std::vector<Point2D> indices2Point2D(std::vector<int>);
+
 	// Check if a point is one of the Designated Points (target, package, etc.)
 	// @param[in] PointState p
 	// @return bool
@@ -151,7 +177,13 @@ public:
 	// @param[in] int b
 	// @return ShortestPath The best index sequence of points in scenario.points
 	ShortestPath geodesicL2Distance(int a, int b);
-	
+
+	// Compute shortest path between two points over the obstacles present in this scenario
+	// @param[in] Point2D a
+	// @param[in] Point2D b
+	// @return ShortestPath The best index sequence of points in scenario.points
+	ShortestPath geodesicL2Distance(Point2D a, Point2D b);
+
 	// Create the shortest path hash map
 	void constructSTPMap();
 
