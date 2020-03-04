@@ -499,7 +499,7 @@ void Canvas::drawTargets() {
 
 
 void Canvas::drawObstacles() {
-	for (auto o : scenario.obstacles) {
+	for (auto o : scenario.obs) {
 		for (auto t : o.triIdx) {
 			float x0 = o.points[t[0]].x;
 			float y0 = o.points[t[0]].y;
