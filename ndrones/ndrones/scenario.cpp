@@ -163,10 +163,19 @@ void Scenario::constructSTPMap() {
 			// |V|^2 * K 
 			// TODO: modify segIntersect so that it takes logK
 			for (auto ob : obs) {
+				if (i == 88 && j == 91) {
+					int a = 0;
+					a++;
+				}
+
+				// If (i,j) intersects with any obstacle, it's not a graph edge
 				if (ob.segIntersect(pi, pj)) {
 					isEdge = false;
 					break;
 				}
+
+				// If (i,j) is not intersecting, but is actually an obstacle's diagonal
+				// it's not an edge either
 				else if (ob.diagonal(pi, pj)) {
 					isEdge = false;
 					break;
@@ -234,6 +243,10 @@ void Scenario::constructSTPMap() {
 			// |V|^2 * K 
 			for (auto ob : obs) {
 				if (ob.segIntersect(pi, pj)) {
+					isEdge = false;
+					break;
+				}
+				else if (ob.diagonal(pi, pj)) {
 					isEdge = false;
 					break;
 				}
