@@ -613,6 +613,7 @@ void SimplePolygon::earInit() {
 
 void SimplePolygon::triangulate() {
 	int v0, v1, v2, v3, v4;
+	earInit();
 	std::vector<LinkedPoint2D> pointsCopy = points;
 	int n = pointsCopy.size();
 	int start = 0;
