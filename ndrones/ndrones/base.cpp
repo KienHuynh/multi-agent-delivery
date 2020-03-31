@@ -282,12 +282,13 @@ DesignatedPoint::DesignatedPoint() {
 }
 
 
-Agent::Agent(int _ID, int _x, int _y, float _v) {
+Agent::Agent(int _ID, int _x, int _y, float _v, unsigned int _combinedObsType) {
 	ID = _ID;
 	loc0.x = _x;
 	loc0.y = _y;
 	loc = loc0;
 	v = _v;
+	obsType = _combinedObsType;
 
 	delay = 0;
 	finTime = 0;
@@ -303,11 +304,12 @@ Agent::Agent(int _ID, int _x, int _y, float _v) {
 }
 
 
-Agent::Agent(int _ID, Point2D _loc0, float _v) {
+Agent::Agent(int _ID, Point2D _loc0, float _v, unsigned int _combinedObsType) {
 	ID = _ID;
 	loc0 = _loc0;
 	loc = loc0;
 	v = _v;
+	obsType = _combinedObsType;
 
 	delay = 0;
 	finTime = 0;
@@ -323,13 +325,15 @@ Agent::Agent(int _ID, Point2D _loc0, float _v) {
 }
 
 
-Agent::Agent(int _ID, int _x, int _y, float _v, float _delay) {
+Agent::Agent(int _ID, int _x, int _y, float _v, float _delay, unsigned int _combinedObsType) {
 	ID = _ID;
 
 	loc0.x = _x;
 	loc0.y = _y;
 	loc = loc0;
 	v = _v;
+
+	obsType = _combinedObsType;
 
 	delay = _delay;
 	finTime = 0;
@@ -345,12 +349,14 @@ Agent::Agent(int _ID, int _x, int _y, float _v, float _delay) {
 }
 
 
-Agent::Agent(int _ID, Point2D _loc0, float _v, float _delay) {
+Agent::Agent(int _ID, Point2D _loc0, float _v, float _delay, unsigned int _combinedObsType) {
 	ID = _ID;
 
 	loc0 = _loc0;
 	loc = loc0;
 	v = _v;
+
+	obsType = _combinedObsType;
 
 	delay = _delay;
 	finTime = 0;

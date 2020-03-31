@@ -6,6 +6,7 @@ class Scenario;
 enum ProblemType;
 enum DesignatedPointInputMode;
 
+
 // APGRID: axis-parallel grid
 // GRID: s-t aligned grid
 // RECTUNION: union of rectangles
@@ -20,9 +21,11 @@ enum SamplingMethod {
 	LOGGRID = 5
 };
 
+
 // Some input operators for ProblemType and DesignatedPointInputMode to make life easier
 std::istream& operator >> (std::istream &input, ProblemType& p);
 std::istream& operator >> (std::istream &input, DesignatedPointInputMode& f);
+std::istream& operator >> (std::istream &input, ObstacleType& t);
 
 
 class ScenarioIO {

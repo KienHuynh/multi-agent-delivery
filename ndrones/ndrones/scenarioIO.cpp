@@ -38,6 +38,19 @@ std::istream& operator >> (std::istream &input, SamplingMethod& p) {
 }
 
 
+std::istream& operator >> (std::istream &input, ObstacleType& t) {
+	std::string tmp;
+	input >> tmp;
+	if (stringEqual(tmp, "type1")) t = TYPE1;
+	if (stringEqual(tmp, "type2")) t = TYPE2;
+	if (stringEqual(tmp, "type3")) t = TYPE3;
+	if (stringEqual(tmp, "type4")) t = TYPE4;
+	if (stringEqual(tmp, "type5")) t = TYPE5;
+
+	return input;
+}
+
+
 void ScenarioIO::loadDesignatedPoint(
 	std::ifstream &myfile,
 	std::vector<DesignatedPoint> &dPoints,
@@ -136,13 +149,24 @@ void ScenarioIO::loadDesignatedPolygon(
 void ScenarioIO::loadAgent(std::ifstream &myfile,
 	Scenario &scenario,
 	int nAgents) {
+	std::string str;
+	getline(myfile, str);
+	std::istringstream ss(str);
+
 	scenario.maxSpeed = -1;
 	scenario.minSpeed = -1;
 
 	for (int i = 0; i < nAgents; i++) {
 		float x, y;
 		float v;
-		myfile >> x >> y >> v;
+		ObstacleType obsType = TYPE0;
+		int combinedObsType = TYPE0;
+
+		std::string str;
+		getline(myfile, str);
+		std::istringstream ss(str);
+		
+		ss >> x >> y >> v;
 		if (scenario.maxSpeed == -1) {
 			scenario.maxSpeed = v;
 			scenario.minSpeed = v;
@@ -154,7 +178,11 @@ void ScenarioIO::loadAgent(std::ifstream &myfile,
 			scenario.minSpeed = v;
 		}
 
-		Agent a(i, x, y, v);
+		while (ss >> obsType) {
+			combinedObsType = obsType | combinedObsType;
+		}
+
+		Agent a(i, x, y, v, combinedObsType);
 
 		Point2D p(x, y);
 		if (!scenario.containPoint(p)) {
@@ -175,7 +203,8 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 	for (int i = 0; i < nObs; i++) {
 		std::vector<Point2D> points;
 		int nPoint = 0;
-		myfile >> nPoint;
+		ObstacleType t;
+		myfile >> nPoint >> t;
 
 		for (int j = 0; j < nPoint; j++) {
 			Point2D p;
@@ -188,6 +217,7 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 		polygon.triangulate();
 		// Find convex hull
 		polygon.findCVHull();
+		polygon.type = t;
 
 		obstacles.push_back(polygon);
 	}
@@ -289,7 +319,7 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	std::istringstream ss(str);
 
 	ProblemType pt;
-	SamplingMethod sm = UNSPECIFIED;
+	SamplingMethod sm = SamplingMethod::UNSPECIFIED;
 	while (ss >> pt) {
 		scenario.problemType = (ProblemType)(scenario.problemType | pt);
 	}

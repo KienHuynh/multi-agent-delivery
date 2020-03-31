@@ -21,6 +21,17 @@ constexpr auto PI = 3.14156;
 enum Solver { ECLD_2D_DYNAMIC };
 
 
+enum ObstacleType {
+	TYPE0 = 0,
+	TYPE1 = 1,
+	TYPE2 = 2,
+	TYPE3 = 4,
+	TYPE4 = 8,
+	TYPE5 = 16
+};
+
+
+
 class Agent;
 class LinkedPoint2D;
 
@@ -191,10 +202,13 @@ public:
 	// Occupied by a task or not
 	bool isAvail;
 
-	Agent(int _ID, int _x, int _y, float _v);
-	Agent(int _ID, Point2D _loc0, float _v);
-	Agent(int _ID, int _x, int _y, float _v, float _delay);
-	Agent(int _ID, Point2D, float _v, float _delay);
+	// Obstacle type(s) that this drone cannot pass through
+	unsigned int obsType;
+
+	Agent(int _ID, int _x, int _y, float _v, unsigned int _combinedObsType);
+	Agent(int _ID, Point2D _loc0, float _v, unsigned int _combinedObsType);
+	Agent(int _ID, int _x, int _y, float _v, float _delay, unsigned int _combinedObsType);
+	Agent(int _ID, Point2D, float _v, float _delay, unsigned int _combinedObsType);
 
 	// Compute the time to go to point p based on current loc and velocity
 	// @param[in] Point2D a
@@ -255,6 +269,8 @@ public:
 
 	std::vector<LinkedPoint2D> points;
 	float perimeter;
+	// Obstacle type: to indicate which agent is allowed to pass through
+	ObstacleType type;
 	// Hull point index, storing indices of hull points
 	std::vector<int> hullPtIdx;
 	// Triangle index, storing indices of all triangles after triangulation
