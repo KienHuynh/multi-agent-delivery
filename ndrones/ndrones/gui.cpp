@@ -511,8 +511,30 @@ void Canvas::drawObstacles() {
 			scenToCanvasCoord(x1, y1);
 			scenToCanvasCoord(x2, y2);
 			
-			fl_color(250, 200, 100);
+			Color color(255, 255, 255);
+			if (o.type == 1) {
+				color = Color(255, 80, 255);
+			}
+			if (o.type == 2) {
+				color = Color(255, 255, 80);
+			}
+			fl_color(color.r, color.g, color.b);
 			fl_polygon(x0, y0, x1, y1, x2, y2);
+		}
+
+		for (int i = 0; i < o.points.size(); i++) {
+			float x0 = o.points[i].x;
+			float y0 = o.points[i].y;
+			float x1 = o.points[(i + 1) % o.points.size()].x;
+			float y1 = o.points[(i + 1) % o.points.size()].y;
+
+			scenToCanvasCoord(x0, y0);
+			scenToCanvasCoord(x1, y1);
+
+			fl_color(50, 50, 50);
+			//fl_line_style
+			fl_line_style(FL_SOLID, 2);
+			fl_line(x0, y0, x1, y1);
 		}
 		
 		/*for (int i = 0; i < o.hullPtIdx.size(); i++) {
@@ -534,7 +556,7 @@ void Canvas::drawObstacles() {
 
 
 void Canvas::drawGraph() {
-	for (int i = 0; i < scenario.edgeList.size(); i++) {
+	/*for (int i = 0; i < scenario.edgeList.size(); i++) {
 		for (auto e : scenario.edgeList[i].e) {
 			float x0 = scenario.points[i].p.x;
 			float y0 = scenario.points[i].p.y;
@@ -547,7 +569,7 @@ void Canvas::drawGraph() {
 			fl_line_style(FL_SOLID, 2);
 			fl_line(x0, y0, x1, y1);
 		}
-	}
+	}*/
 }
 
 
