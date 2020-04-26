@@ -17,6 +17,15 @@ sampling_method		// For discrete problem: CIRCULAR, APGRID, GRID, LOGGRID
 nH nW maxY			// If GRID
 nTheta nR			// If CIRCULAR
 nH nW f	maxY		// If LOGGRID
+minX maxX stepX		// If APGRID
+minY maxY stepY		// Also APGRID
+OBSTACLE
+num_obs				// Number of obstacles
+num_vert			// Number of vertices
+x1 y1
+x2 y2
+...					// num_vert
+
 
 =========================================================
 problem_type
@@ -38,11 +47,20 @@ GRID - Create data along a grid, rotated by the angle of (0x, s-t line)
 nH: number of steps to sample from min_y to max_y (rotated to be perpendicular to the s-t line)
 nW: number of steps to sample from s to t (rotated along s-t line)
 maxY: if > 0, it is used to specified the furthest distance to sample from the s-t line
+
 CIRCULAR - Create circular data points centering around the designated points, nTheta * nR in total
 nTheta: number of angles to sample (e.g., nTheta = 4 means sampling with theta = 0, 90, 180, 270)
 nR: number of times to sample along the radius at each theta
+
 LOGGRID - Create an s-t aligned grid but as the points go further from s-t, the spacing is increased with a factor of f
 nH: number of steps to sample from min_y to max_y (rotated to be perpendicular to the s-t line)
 nW: number of steps to sample from s to t (rotated along s-t line)
 f: increasing factor
 maxY: if > 0, it is used to specified the furthest distance to sample from the s-t line
+
+APGRID - Axis parallel grid
+minX / minY: mininum x and y values of the grid
+maxX / maxY: maximum x and y values of the grid
+stepX / stepY: spacing in x/y between each two adjacent grid points
+
+
