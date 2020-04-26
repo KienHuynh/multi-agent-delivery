@@ -6,7 +6,7 @@
 
 #include <array>
 #include <sstream>
-#include <map> 
+#include <unordered_map> 
 
 #include "base.h"
 #include "scenarioIO.h"
@@ -51,6 +51,7 @@ private:
 	public:
 		std::vector<int> path;
 		float length;
+		ShortestPath();
 	};
 
 	// Support class for the graph
@@ -58,6 +59,14 @@ private:
 	public:
 		std::vector<int> e;
 		std::vector<float> w;
+	};
+
+	class ShortestPathMap {
+	public:
+		std::vector<std::vector<ShortestPath>> map;
+		int obsType;
+		ShortestPathMap(std::vector<std::vector<ShortestPath>> map_, int obsType_);
+		ShortestPathMap();
 	};
 
 public:
@@ -79,8 +88,7 @@ public:
 
 	// The set of discrete points.
 	std::vector<PointState> points;
-	// The edge list for all of the points above, used for graph construction
-	std::vector<EdgeList> edgeList;
+	
 	// Store the packages.
 	std::vector<DesignatedPoint> packages;
 	// Store the targets.
@@ -101,7 +109,7 @@ public:
 	std::vector<SimplePolygon> obs;
 
 	// Shortest path hash map, for faster calculation
-	std::map<std::vector<int>, ShortestPath> stpMap;
+	std::unordered_map<int, ShortestPathMap> stpMaps;
 
 	// 
 	std::string outputFileName;
@@ -176,16 +184,22 @@ public:
 	// @param[in] int a
 	// @param[in] int b
 	// @return ShortestPath The best index sequence of points in scenario.points
-	ShortestPath geodesicL2Distance(int a, int b);
+	ShortestPath geodesicL2Distance(int a, int b, int obsTypes);
 
 	// Compute shortest path between two points over the obstacles present in this scenario
 	// @param[in] Point2D a
 	// @param[in] Point2D b
 	// @return ShortestPath The best index sequence of points in scenario.points
-	ShortestPath geodesicL2Distance(Point2D a, Point2D b);
+	ShortestPath geodesicL2Distance(Point2D a, Point2D b, int obsTypes);
 
-	// Create the shortest path hash map
-	void constructSTPMap();
+
+	// Create the shorest path map with specific combination of obstacle types
+	// If the input here indicates type 1 & type 2, then both of them would block paths
+	std::vector<std::vector<ShortestPath>> constructSTPMap(int obTypes);
+
+	// Create shortest path hash maps
+	// There are multiple maps, depending on the type of the obstacles
+	void constructSTPMaps();
 
 	// Mapping from list of agents to some predefined colors
 	// @param[in] std::vector<Agent> agents

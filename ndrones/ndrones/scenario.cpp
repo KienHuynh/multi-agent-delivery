@@ -1,5 +1,6 @@
 #include "scenario.h"
 
+float debugT = 0;
 
 void Scenario::loadFile(const char* fileName) {
 	ScenarioIO::loadFile(fileName, *this);
@@ -86,13 +87,13 @@ std::vector<Point2D> Scenario::indices2Point2D(std::vector<int> indices) {
 
 
 float Scenario::timing(Agent a, int i) {
-	ShortestPath stp = geodesicL2Distance(a.gridRef, i);
+	ShortestPath stp = geodesicL2Distance(a.gridRef, i, a.obsType);
 	return (stp.length / a.v);
 }
 
 
 float Scenario::timing(Agent a, int i, int j) {
-	ShortestPath stp = geodesicL2Distance(i, j);
+	ShortestPath stp = geodesicL2Distance(i, j, a.obsType);
 	return (stp.length / a.v);
 }
 
@@ -112,43 +113,91 @@ bool Scenario::isDesignatedPoint(PointState ps) {
 }
 
 
-Scenario::ShortestPath Scenario::geodesicL2Distance(int a, int b) {
+Scenario::ShortestPath Scenario::geodesicL2Distance(int a, int b, int obsTypes) {
 	ShortestPath stp;
-	std::map<std::vector<int>, ShortestPath>::iterator it =
-		stpMap.find(std::vector<int>({ a, b }));
+	if (obsTypes == 0) {
+		stp.path.push_back(b);
+		stp.length = Point2D::l2Distance(points[a].p, points[b].p);
+		return stp;
+	}
+
+	//auto t0 = std::chrono::steady_clock::now();
+
+	//std::map<std::vector<int>, ShortestPath>::iterator it;
+	// ShortestPathMap stpMap = stpMaps[obsTypes];
+	/*for (int i = 0; i < stpMaps.size(); i++) {
+		if (stpMaps[i].obsType == obsTypes) {
+			stpMap = stpMaps[i];
+			break;
+		}
+	}*/
+
+	/*auto t1 = std::chrono::steady_clock::now();
+	float oldDebugT = debugT;
+	debugT += ((float)std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count()) / 1000000000.0;
+	if ((int)debugT - (int)oldDebugT > 0) std::cout << debugT << std::endl;*/
 
 	// Straight line
-	if (it == stpMap.end()) {
+	// Old code. Use ordered map so log(n) time
+	// TODO: the log(n) time wasn't that long after all?
+	// It seems that the (old) for loop above is longer?
+	/*if (it == stpMap.map.end()) {
 		stp.path.push_back(b);
 		stp.length = Point2D::l2Distance(points[a].p, points[b].p);
 	}
 	else {
 		stp = it->second;
+	}*/
+
+	if (obsTypes == 2) {
+		int a = 1;
+		a++;
+	}
+
+	// Straight line
+	if (stpMaps[obsTypes].map[a][b].length == -1) {
+		stp.path.push_back(b);
+		stp.length = Point2D::l2Distance(points[a].p, points[b].p);
+	}
+	else {
+		stp = stpMaps[obsTypes].map[a][b];
 	}
 
 	return stp;
 }
 
 
-Scenario::ShortestPath Scenario::geodesicL2Distance(Point2D a, Point2D b) {
+// TODO: fix this so that it doesn't have to search for the index
+Scenario::ShortestPath Scenario::geodesicL2Distance(Point2D a, Point2D b, int obsTypes) {
 	int ai, bi;
 	for (int k = 0; k < points.size(); k++) {
 		if (points[k].p == a) ai = k;
 		if (points[k].p == b) bi = k;
 	}
-	return geodesicL2Distance(ai, bi);
+	return geodesicL2Distance(ai, bi, obsTypes);
 }
 
 
-void Scenario::constructSTPMap() {
+std::vector<std::vector<Scenario::ShortestPath>> Scenario::constructSTPMap(int obTypes) {
 	// If there is no obstacle, we can use L2 distance for everything
 	// and there is no need for a graph
-	if (obs.size() == 0) return;
+	std::vector<std::vector<Scenario::ShortestPath>> stpMap;
+	if (obs.size() == 0) return stpMap;
+	for (int i = 0; i < points.size(); i++) {
+		std::vector<Scenario::ShortestPath> stpVec;
+		for (int j = 0; j < points.size(); j++) {
+			stpVec.push_back(ShortestPath());
+		}
+		stpMap.push_back(stpVec);
+	}
 
 	// Construct the graph
 	// NOTE: at this point, all points inside the obstacles should have been removed
 	// The SimplePolygon::segIntersect function still check for the cases where
 	// a point lies inside the polygon just in case
+
+	// The edge list for all of the points above, used for graph construction
+	std::vector<EdgeList> edgeList;
 	EdgeList* edgeListArr = new EdgeList[points.size()];
 	for (int i = 0; i < points.size(); i++) {
 		EdgeList edgeList_i;
@@ -163,11 +212,8 @@ void Scenario::constructSTPMap() {
 			// |V|^2 * K 
 			// TODO: modify segIntersect so that it takes logK
 			for (auto ob : obs) {
-				if (i == 88 && j == 91) {
-					int a = 0;
-					a++;
-				}
-
+				if ((((int)ob.type) & obTypes) == 0) continue;
+				
 				// If (i,j) intersects with any obstacle, it's not a graph edge
 				if (ob.segIntersect(pi, pj)) {
 					isEdge = false;
@@ -185,7 +231,7 @@ void Scenario::constructSTPMap() {
 			if (isEdge) {
 				edgeList_i.e.push_back(j);
 				edgeList_i.w.push_back(Point2D::l2Distance(pi, pj));
-				
+
 				edgeList_j.e.push_back(i);
 				edgeList_j.w.push_back(Point2D::l2Distance(pi, pj));
 				edgeListArr[j].e.insert(edgeListArr[j].e.end(), edgeList_j.e.begin(), edgeList_j.e.end());
@@ -242,6 +288,8 @@ void Scenario::constructSTPMap() {
 			bool isEdge = true;
 			// |V|^2 * K 
 			for (auto ob : obs) {
+				if ((((int)ob.type) & obTypes) == 0) continue;
+
 				if (ob.segIntersect(pi, pj)) {
 					isEdge = false;
 					break;
@@ -263,12 +311,42 @@ void Scenario::constructSTPMap() {
 				}
 				stp.length = pointsCopy[j].dist;
 
-				stpMap.insert(std::pair<std::vector<int>, ShortestPath>(key, stp));
+				stpMap[i][j] = stp;
+				//stpMap.insert(std::pair<std::vector<int>, ShortestPath>(key, stp));
 			}
 		}
 	}
 
 	delete[] edgeListArr;
+
+	return stpMap;
+}
+
+
+Scenario::ShortestPath::ShortestPath() {
+	length = -1;
+}
+
+
+Scenario::ShortestPathMap::ShortestPathMap(std::vector<std::vector<ShortestPath>> map_, int obsType_) {
+	map = map_;
+	obsType = obsType_;
+}
+
+
+Scenario::ShortestPathMap::ShortestPathMap() {
+
+}
+
+
+void Scenario::constructSTPMaps() {
+	ObstacleType obsTypes[5] = { TYPE1, TYPE2, TYPE3, TYPE4, TYPE5 };
+	ShortestPathMap stpMapTmp1(constructSTPMap(TYPE1), TYPE1);
+	stpMaps.insert({ TYPE1, stpMapTmp1 });
+	ShortestPathMap stpMapTmp2(constructSTPMap(TYPE2), TYPE2);
+	stpMaps.insert({ TYPE2, stpMapTmp2 });
+	ShortestPathMap stpMapTmp3(constructSTPMap(TYPE1 | TYPE2), TYPE1 | TYPE2);
+	stpMaps.insert({ (TYPE1 | TYPE2), stpMapTmp3 });
 }
 
 
@@ -1054,7 +1132,7 @@ void Scenario::createDroneAnimation() {
 				// There shouldn't be any delay
 				// First, get the shorest path from loc0 to the meeting point
 				ShortestPath stp = geodesicL2Distance(bestAgentQueues[a][i].loc0,
-					bestPointQueues[a][i]);
+					bestPointQueues[a][i], bestAgentQueues[a][i].obsType);
 				std::vector<Point2D> stpPoint = indices2Point2D(stp.path);
 				stpPoint.insert(stpPoint.begin(), bestAgentQueues[a][i].loc0);
 				
@@ -1078,7 +1156,8 @@ void Scenario::createDroneAnimation() {
 				// There could be a delay here as this drone might have to wait for a
 				// slower one to arrive
 				stp = geodesicL2Distance(tmpAni[tmpAni.size()-1].end,
-					bestPointQueues[a][i+1]);
+					bestPointQueues[a][i+1],
+					bestAgentQueues[a][i].obsType);
 				stpPoint = indices2Point2D(stp.path);
 				stpPoint.insert(stpPoint.begin(), tmpAni[tmpAni.size() - 1].end);
 				
@@ -1183,8 +1262,11 @@ Scenario::Scenario() {
 
 
 void Scenario::solve() {
+	auto t0 = std::chrono::steady_clock::now();
 	if ((problemType & (TWODIM | EUCLID | DISCRETE)) == (TWODIM | EUCLID | DISCRETE)) {
 		if ((problemType & (SINGLE_ID)) == SINGLE_ID) ecld2DType0DynamicNM();
 		else ecld2DType1DynamicNM();
 	}
+	auto t1 = std::chrono::steady_clock::now();
+	std::cout << "Total solver time: " << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count() << std::endl;
 }
