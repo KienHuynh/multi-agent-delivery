@@ -198,6 +198,7 @@ void ScenarioIO::loadAgent(std::ifstream &myfile,
 void ScenarioIO::loadObstacle(std::ifstream &myfile,
 	Scenario &scenario,
 	int nObs) {
+	//if (nObs == 0) return;
 
 	std::vector<SimplePolygon> obstacles;
 	for (int i = 0; i < nObs; i++) {
@@ -293,7 +294,7 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 	}
 
 	// Construct the graph and pre-compute pairwise distance between all necessary points
-	scenario.constructSTPMap();
+	scenario.constructSTPMaps();
 }
 
 
