@@ -87,10 +87,19 @@ void Palette::createPalette() {
 	// Create the hue palette
 	for (int i = 0; i < cfg::numColor; i++) {
 		float h = ((float)i) * 360.0 / (float)cfg::numColor;
-		float s = 0.8;
-		float v = 0.7;
+		float s = 0.9;
+		float v = 0.9;
 		Color c = Color::HSV2RGB((int)h, s, v);
 		huePalette[i] = c;
+	}
+
+	// Shuffle them up
+	for (int i = 0; i < cfg::numColor; i++) {
+		srand(i);
+		int j = rand() % cfg::numColor;
+		Color c = huePalette[i];
+		huePalette[i] = huePalette[j];
+		huePalette[j] = c;
 	}
 }
 

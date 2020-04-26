@@ -202,7 +202,7 @@ public:
 	// Occupied by a task or not
 	bool isAvail;
 
-	// Obstacle type(s) that this drone cannot pass through
+	// Obstacle type(s) that this drone CANNOT pass through
 	unsigned int obsType;
 
 	Agent(int _ID, int _x, int _y, float _v, unsigned int _combinedObsType);
