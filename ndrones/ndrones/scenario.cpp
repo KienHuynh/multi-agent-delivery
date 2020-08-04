@@ -69,11 +69,11 @@ Color Scenario::depotColorMap(DesignatedPoint dp) {
 }
 
 
-bool Scenario::containPoint(Point2D p) {
+int Scenario::containPoint(Point2D p) {
 	for (int i = 0; i < points.size(); i++) {
-		if (points[i].p == p) return true;
+		if (points[i].p == p) return i;
 	}
-	return false;
+	return -1;
 }
 
 
@@ -250,7 +250,7 @@ std::vector<std::vector<Scenario::ShortestPath>> Scenario::constructSTPMap(int o
 	}
 
 	for (int i = 0; i < points.size(); i++) {
-		if (i % 10 == 0) std::cout << i << std::endl;
+		//if (i % 10 == 0) std::cout << i << std::endl;
 		std::vector<PointState> pointsCopy = points;
 		std::vector<int> q = q0;
 		pointsCopy[i].dist = 0;
@@ -381,7 +381,7 @@ void Scenario::ecld2DType0DynamicNMCommon(
 	}
 
 	for (int k = 1; k < _agents.size(); k++) {
-		std::cout << k << std::endl;
+		//std::cout << k << std::endl;
 		std::vector<PointState> pointsCopy = _points;
 
 		// Sort the pointsCopy by their best time
@@ -468,7 +468,7 @@ void Scenario::ecld2DType0Dynamic11() {
 		for (int i = 0; i < points.size(); i++) {
 			// Find the best handoff point j so that it can travel to i in the shortest time
 			int best_j = -1;
-			if (i % 10 == 0) std::cout << i << std::endl;
+			
 			for (int j = 0; j < pointsCopy.size(); j++) {
 
 				float timeTo_j = agents[k].timing(pointsCopy[j].p);
@@ -477,9 +477,6 @@ void Scenario::ecld2DType0Dynamic11() {
 
 				float time_jTo_i = agents[k].timing(pointsCopy[j].p, pointsCopy[i].p);
 				if (timeTo_j + time_jTo_i < points[i].bestTime) {
-					if (i == 401) {
-						std::cout << j << std::endl;
-					}
 					points[i].bestTime = timeTo_j + time_jTo_i;
 					best_j = j;
 				}
@@ -805,6 +802,8 @@ bool Scenario::missingQueue(std::vector<Agent>* qs) {
 }
 
 
+// Note of terminology change: source-target match is also source-target pair
+// There are m source-target pairs
 void Scenario::ecld2DType1DynamicNM() {
 
 	// An ID is active if there exists a package-target matching for it
@@ -822,6 +821,8 @@ void Scenario::ecld2DType1DynamicNM() {
 
 	// This stores the agent queue for each matching
 	std::vector<Agent>* prevBestAgentQueues = new std::vector<Agent>[activeID.size()];
+
+	// This is an array of size m, element j is the best agent/point queue for the j-th source-pair
 	bestAgentQueues = new std::vector<Agent>[activeID.size()];
 	bestPointQueues = new std::vector<Point2D>[activeID.size()];
 
@@ -848,11 +849,15 @@ void Scenario::ecld2DType1DynamicNM() {
 
 	newAgents = agents;
 
-	/*for (int k = 0; k < agents.size(); k++) {
-		orderOfExecutionQueue[k].push_back(agents[k]);
-	}*/
-
-	// Stopping flag, is true if there is no change
+	// inner loop vs mainLoopStop
+	// inner loop (run at most num_agent * num_ID times):
+	// finding conflicts if an agent is shared among different pairs
+	// assign that agent to the best pair & create auxiliary agents
+	// do it again until there's no conflict anymore
+	// main loop (run at most num_agent * num_ID times):
+	// finding inconsistency in time between auxiliary agents (explained below)
+	// resolve this by removing all agents involved after this auxiliary agent
+	// only keep the last agent that does not have any time inconsistency
 	bool stop = false;
 	bool mainLoopStop = false;
 	int loop = 0;
@@ -860,7 +865,7 @@ void Scenario::ecld2DType1DynamicNM() {
 		std::vector<Agent>* orderOfExecutionQueue;
 		orderOfExecutionQueue = new std::vector<Agent>[agents.size()];
 
-		std::cout << loop << std::endl;
+		std::cout << "Main loop: "<< loop << std::endl;
 		loop++;
 
 		stop = false;
@@ -870,8 +875,10 @@ void Scenario::ecld2DType1DynamicNM() {
 			std::cout << "Inner loop: " << innerLoop << std::endl;
 			innerLoop++;
 			float* bestTimes = new float[activeID.size()];
-			// This table store 0/1 values, indicating if an agent is used in a matching or not
-			// Used for conflict resolving
+
+			// agentAssignment is a table storing 0/1 values
+			// it indicates if an agent is used in a source-pair matching or not
+			// mainly used for conflict resolving
 			int** agentAssignment = new int*[activeID.size()];
 			for (int a = 0; a < activeID.size(); a++) {
 				agentAssignment[a] = new int[agents.size()];
@@ -904,6 +911,7 @@ void Scenario::ecld2DType1DynamicNM() {
 
 				if (agentsCopy.size() == 0) continue;
 
+				// Solve the single source-target pair problem for pair numbered a
 				pointsCopy = points;
 				ecld2DType0DynamicNMCommon(agentsCopy, packagesOfID[a], pointsCopy);
 				bestTimes[a] = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
@@ -919,6 +927,10 @@ void Scenario::ecld2DType1DynamicNM() {
 				}
 			}
 
+			// If an agent a_k is shared among some source-target pairs (i.e. there is conflicts), 
+			// find the best source-target pair to assign that agent
+			// best = minimizing new makespan (because removing that agent from other pairs will increase makespan)
+			// At the same time, create an auxiliary agent for a_k with delayed starting time
 			int bestMatchingInd, bestAgentInd;
 			bool isConflict = conflictResolve(
 				points,
@@ -932,6 +944,7 @@ void Scenario::ecld2DType1DynamicNM() {
 				bestAgentInd);
 
 			if (isConflict) {
+				// Create a new agent and recompute the above again until there's no conflict anymore
 				bestAgentQueues[bestMatchingInd].push_back(newAgents[bestAgentInd]);
 			}
 			else stop = true;
@@ -995,20 +1008,29 @@ void Scenario::ecld2DType1DynamicNM() {
 			}
 		}
 
+		// Order of execution queue(s):
+		// Each agent will maintain a list of the original agent and its auxiliary (cloned) agents
+		// For example, agent a_i will finish its first job in time t1, it will have order of execution 0
+		// Then its first clone, a_i' will start at time t1, then having a new finishing time t2, order of execution 1
+		// The same for later clones
+		// This queue is maintained to check for inconsistency in finishing time / starting time (explained below)
 		bagAgentsByOrder(bestAgentQueues, orderOfExecutionQueue);
 
 		for (int k = 0; k < tmpAgents.size(); k++) {
 			for (int i = 1; i < orderOfExecutionQueue[k].size(); i++) {
-				// Checking for discrepancy in time between two executions of an agent
+				// Checking for discrepancy in time between two executions (in two different pairs) of an agent
 				// This would only happen if:
-				// Agent A is executed for the (i-1)-th time for matching 1, with fin time t1
-				// Agent A is then used for another matching for matching 2, order of execution is i-th, using delay time t1
-				// Matching 1 gets assigned with a new drone, this affects fin time t1, maing it t1'
-				// Now there is a difference between finTime of A at (i-1)-th and delayTime of A at i-th.
+				// Agent k is done for the (i-1)-th time for matching 1, with fin time t1
+				// Agent k is then used for matching 2, its order of execution is now i-th, using delay time t1
+				// Matching 1 gets assigned with a new drone/gets one of its shared drone removed, this affects fin time t1, making it t1'
+				// Now there is a difference between finTime of k at (i-1)-th and delayTime of A at i-th.
 				if (orderOfExecutionQueue[k][i].delay != orderOfExecutionQueue[k][i - 1].finTime) {
 					Agent tmp = orderOfExecutionQueue[k][i - 1];
 
-					// Remove all instances of this agent k with orderOfEx i-th onward
+					// Agent k with inconsistency in time: found
+					// Clear all bestAgentQueues[] (of all matchings) in which this agent k 
+					// with orderOfEx i-th onward because of the time inconsistency
+					// The bestAgentQueues[] will be recomputed later
 					for (int a = 0; a < activeID.size(); a++) {
 						if (containAgentAfterOrder(bestAgentQueues[a], tmp)) {
 							// Completely clear this queue
@@ -1019,7 +1041,11 @@ void Scenario::ecld2DType1DynamicNM() {
 				}
 			}
 		}
+		
 
+		// Because of the above, some other agents in bestAgentQueues[a] are affected (if the queue is cleared)
+		// The below detect any remaining gaps for these other agents 
+		// (they may have no inconsistency but still need to be cleaned up)
 		bagAgentsByOrder(bestAgentQueues, orderOfExecutionQueue);
 
 		// Detect a gap in order of execution
@@ -1043,6 +1069,9 @@ void Scenario::ecld2DType1DynamicNM() {
 			}
 		}
 
+		// At this point, the best agent list is not actually final yet
+		// They can be replaced by better auxilary drones in later loops
+
 		for (int a = 0; a < activeID.size(); a++) {
 			if (bestAgentQueues[a].size() == 0) continue;
 			std::cout << "Matching " << a << ": ";
@@ -1058,6 +1087,8 @@ void Scenario::ecld2DType1DynamicNM() {
 			}
 		}
 		else {
+			// If there is no change in two consecuitive loops
+			// Issue a stop to the main loop
 			if (equalAgentQueue(prevBestAgentQueues, bestAgentQueues) &&
 				!missingQueue(prevBestAgentQueues)) {
 				mainLoopStop = true;
@@ -1074,7 +1105,9 @@ void Scenario::ecld2DType1DynamicNM() {
 		delete[] orderOfExecutionQueue;
 	}
 
-	// Re-compute the solution with the above assignments
+	// Re-compute the solution for the final with the above assignments
+	// There could be auxilary agents
+	// Note that all conflicts should be solved by now
 	std::vector<DesignatedPoint> allTargets;
 	overallTime = -1;
 	for (int a = 0; a < activeID.size(); a++) {
@@ -1084,6 +1117,7 @@ void Scenario::ecld2DType1DynamicNM() {
 		ecld2DType0DynamicNMCommon(bestAgentQueues[a], packagesOfID[a], pointsCopy);
 		bestTargets[a] = findBestTarget(pointsCopy, targetsOfID[a]);
 		bestTimes[a] = findBestTimeFromTargets(pointsCopy, targetsOfID[a]);
+
 		if (overallTime == -1 || overallTime < bestTimes[a]) overallTime = bestTimes[a];
 		bestPointQueues[a] = pointsCopy[bestTargets[a].gridRef].pointQueue;
 		bestPointQueues[a].push_back(bestTargets[a].loc);

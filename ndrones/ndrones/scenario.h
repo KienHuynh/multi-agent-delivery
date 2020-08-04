@@ -146,8 +146,8 @@ public:
 
 	// CHeck if point p already exists in this.points
 	// @param[in] Point2D p
-	// @return bool
-	bool containPoint(Point2D p);
+	// @return int index of the point, if return -1 then point not found
+	int containPoint(Point2D p);
 
 	// Compute the time it takes for agent to fly from its loc to i
 	// Use geodesic/graph distance as needed
