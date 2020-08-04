@@ -185,9 +185,13 @@ void ScenarioIO::loadAgent(std::ifstream &myfile,
 		Agent a(i, x, y, v, combinedObsType);
 
 		Point2D p(x, y);
-		if (!scenario.containPoint(p)) {
+		int agentIndex = scenario.containPoint(p);
+		if (agentIndex == -1) {
 			scenario.points.push_back(p);
 			a.gridRef = scenario.points.size() - 1;
+		}
+		else {
+			a.gridRef = agentIndex;
 		}
 		scenario.agents.push_back(a);
 		scenario.updateMinMaxXY(x, y);
