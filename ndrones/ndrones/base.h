@@ -205,9 +205,9 @@ public:
 	// Obstacle type(s) that this drone CANNOT pass through
 	unsigned int obsType;
 
-	Agent(int _ID, int _x, int _y, float _v, unsigned int _combinedObsType);
+	Agent(int _ID, float _x, float _y, float _v, unsigned int _combinedObsType);
 	Agent(int _ID, Point2D _loc0, float _v, unsigned int _combinedObsType);
-	Agent(int _ID, int _x, int _y, float _v, float _delay, unsigned int _combinedObsType);
+	Agent(int _ID, float _x, float _y, float _v, float _delay, unsigned int _combinedObsType);
 	Agent(int _ID, Point2D, float _v, float _delay, unsigned int _combinedObsType);
 
 	// Compute the time to go to point p based on current loc and velocity

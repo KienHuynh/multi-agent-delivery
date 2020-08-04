@@ -291,7 +291,7 @@ DesignatedPoint::DesignatedPoint() {
 }
 
 
-Agent::Agent(int _ID, int _x, int _y, float _v, unsigned int _combinedObsType) {
+Agent::Agent(int _ID, float _x, float _y, float _v, unsigned int _combinedObsType) {
 	ID = _ID;
 	loc0.x = _x;
 	loc0.y = _y;
@@ -334,7 +334,7 @@ Agent::Agent(int _ID, Point2D _loc0, float _v, unsigned int _combinedObsType) {
 }
 
 
-Agent::Agent(int _ID, int _x, int _y, float _v, float _delay, unsigned int _combinedObsType) {
+Agent::Agent(int _ID, float _x, float _y, float _v, float _delay, unsigned int _combinedObsType) {
 	ID = _ID;
 
 	loc0.x = _x;
