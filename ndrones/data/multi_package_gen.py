@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 import copy
 import time
 
+import glob
+import os
+import subprocess
+from shutil import copyfile
+import re
+
 
 def gen(min_x, max_x, min_y, max_y, min_speed, max_speed, m, k):
     scenario = {}
@@ -43,9 +49,26 @@ def gen(min_x, max_x, min_y, max_y, min_speed, max_speed, m, k):
     return scenario
 
 
+def update_bound(min_x, max_x, min_y, max_y, p):
+    if min_x > p[0]:
+        min_x = p[0]
+    if max_x < p[0]:
+        max_x = p[0]
+    if min_y > p[1]:
+        min_y = p[1]
+    if max_y < p[1]:
+        max_y = p[1]
+
+    return min_x, max_x, min_y, max_y
+
+
 def write_input_file(scenario, save_path):
     txt_save_path = save_path + '.txt'
     json_save_path = save_path + '.json'
+    min_x = scenario['packages'][0]['s'][0]
+    max_x = scenario['packages'][0]['s'][0]
+    min_y = scenario['packages'][0]['s'][1]
+    max_y = scenario['packages'][0]['s'][1]
 
     with open(txt_save_path, 'w') as f:
         f.write('TWODIM EUCLID DISCRETE' + '\n')
@@ -55,21 +78,32 @@ def write_input_file(scenario, save_path):
         for mm in range(scenario['m']):
             package = scenario['packages'][mm]
             f.write(str(package['s'][0]) + ' ' + str(package['s'][1]) + ' ' + str(mm) + '\n')
+            min_x, max_x, min_y, max_y = update_bound(min_x, max_x, min_y, max_y, package['s'])
 
         f.write('SINGLE_POINT' + '\n')
         f.write(str(scenario['m']) + '\n')
         for mm in range(scenario['m']):
             package = scenario['packages'][mm]
             f.write(str(package['t'][0]) + ' ' + str(package['t'][1]) + ' ' + str(mm) + '\n')
+            min_x, max_x, min_y, max_y = update_bound(min_x, max_x, min_y, max_y, package['t'])
 
         f.write(str(scenario['k']) + '\n')
         for kk in range(scenario['k']):
             agent = scenario['agents'][kk]
             f.write(str(agent['loc'][0]) + ' ' + str(agent['loc'][1]) + ' ' + str(agent['v']) + '\n')
+            min_x, max_x, min_y, max_y = update_bound(min_x, max_x, min_y, max_y, agent['loc'])
 
+        min_x += 0.1
+        max_x -= 0.1
+        min_y += 0.1
+        max_y -= 0.1
+        bb_width = max_x - min_x
+        bb_height = max_y - min_y
+        step_x = bb_width / 8
+        step_y = bb_height / 8
         f.write('APGRID' + '\n')
-        f.write('-20 20 16' + '\n')
-        f.write('-20 20 16' + '\n')
+        f.write('%.5f %.5f %.5f\n' % (min_x, max_x, step_x))
+        f.write('%.5f %.5f %.5f\n' % (min_y, max_y, step_y))
 
     scenario_dict = {'scenario': scenario}
     with open(json_save_path, 'w') as f:
@@ -156,7 +190,8 @@ def nat_approx(s, t, agents):
     agents = agents[np.argsort(agents[:, 3]), :]
     a0 = agents[0, :]
     makespan = 0
-    intervals = [timing(s[0, 1:3], a0[1:3], a0[3]), timing(s[0, 1:3], a0[1:3], a0[3]) + timing(s[0, 1:3], t[0, 1:3], a0[3])]
+    intervals = [timing(s[0, 1:3], a0[1:3], a0[3]),
+                 timing(s[0, 1:3], a0[1:3], a0[3]) + timing(s[0, 1:3], t[0, 1:3], a0[3])]
     ren_points = [s[0, 1:3], t[0, 1:3]]
     agent_used = [a0[0]]
 
@@ -216,8 +251,8 @@ def nat_approx_m(src_table, tgt_table, agent_table, in_prog_pkg):
         agent_table_mm = agent_table_mm[np.argsort(agent_table_mm[:, 3]), :]
 
         intervals, agents_used, ren_points = nat_approx(src_table[src_table[:, 0] == mm, :],
-                                              tgt_table[src_table[:, 0] == mm, :],
-                                              agent_table_mm)
+                                                        tgt_table[src_table[:, 0] == mm, :],
+                                                        agent_table_mm)
         for kk in range(len(intervals) - 1):
             # mm: the src-target pair that this agent is assigned to
             agent = {'id': agents_used[kk],
@@ -243,11 +278,17 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
     ren_points = []
     current_time = 0
 
-    src_table = np.concatenate((src_table, np.zeros((m, 1))), axis = 1)
+    src_table = np.concatenate((src_table, np.zeros((m, 1))), axis=1)
 
     in_prog_pkg = list(range(m))
     agents = nat_approx_m(src_table, tgt_table, agent_table, in_prog_pkg)
     ani1 += copy.deepcopy(agents)
+
+    agent_table_tmp = np.zeros((0, 5))
+    for agent in agents:
+        agent_table_tmp = np.concatenate((agent_table_tmp, agent_table[agent_table[:, 0] == agent['id'], :]), axis=0)
+    agent_table = np.copy(agent_table_tmp)
+
     finished = False
     counter = -1
     while True:
@@ -268,7 +309,7 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
         # Update the first agent and clear its firs task
         time_taken = agents[0]['ts'][0] - current_time
         current_time = agents[0]['ts'][0]
-        #print('%.4f' % current_time, '%.4f' % time_taken)
+        # print('%.4f' % current_time, '%.4f' % time_taken)
         agents[0]['loc'] = agents[0]['to'][0]
         del agents[0]['to'][0]
         del agents[0]['ts'][0]
@@ -296,7 +337,7 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
                     agents_0_ani['to'].append(np.copy(agents[a]['loc']))
                     agents_0_ani['to'].append(np.copy(agents[a]['to'][0]))
                     ani2.append(agents_0_ani)
-                    
+
                     agents[a]['loc'] = agents[a]['to'][0]
                     ex_list.append(agents[a]['id'])
                     del agents[a]['ts'][0]
@@ -342,7 +383,8 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
             break
 
         time_table = np.zeros((len(in_prog_pkg), len(in_prog_pkg)))
-        #time_table[:, 0] = in_prog_pkg
+        time_table_wo_help = np.zeros((len(in_prog_pkg), 1))
+        # time_table[:, 0] = in_prog_pkg
         agent_0 = agent_table[agent_table[:, 0] == agents[0]['id'], :].reshape(1, 5)
         no_contrib = True
         if update_state:
@@ -356,6 +398,7 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
                     tgt_table[src_table[:, 0] == mm, :],
                     np.copy(agent_table_mm))
                 time_table[:, i] = intervals[-1]
+                time_table_wo_help[i] = intervals[-1]
 
                 if mm == agent_0_mm_:
                     continue
@@ -367,7 +410,7 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
                     tgt_table[src_table[:, 0] == mm, :],
                     np.copy(agent_table_mm))
                 if agents[0]['id'] in agents_used:
-                    #time_table[time_table[:, 0] == mm, 1] = intervals[-1]
+                    # time_table[time_table[:, 0] == mm, 1] = intervals[-1]
                     time_table[i, i] = intervals[-1]
                     no_contrib = False
 
@@ -378,16 +421,17 @@ def live_approx(src_table, tgt_table, agent_table, m, ani1, ani2):
                 makespans = np.max(time_table, axis=1)
                 best_ind = np.argmin(makespans)
                 best_mm = in_prog_pkg[best_ind]
-                if(best_mm == agent_0_mm_):
+                if (best_mm == agent_0_mm_) or (makespans[best_ind] == np.max(time_table_wo_help)):
                     del agents[0]
                     agent_table = agent_table[agent_table[:, 4] != -1, :]
                     continue
+
                 agent_table[agent_table[:, 0] == agents[0]['id'], 4] = best_mm
                 agents = nat_approx_m(src_table, tgt_table, agent_table, in_prog_pkg)
-
+                abc = 1
                 for a in range(len(agents)):
                     # remove all events where the agent picks up the package right where it's at
-                    at_src = src_table[:, 1:3] == agents[a]['loc'].reshape(1,2)
+                    at_src = src_table[:, 1:3] == agents[a]['loc'].reshape(1, 2)
                     at_src = np.sum(np.sum(at_src, axis=1) == 2) > 0
 
                     if agents[a]['ts'][0] == 0 and at_src:
@@ -433,13 +477,22 @@ def silly_approx(scenario, ani1, ani2):
     best_time_ = np.zeros((m, 1))
     while agent_table[agent_table[:, 4] == -1, :].size > 0:
         # Check to see if any agent is unassigned
-        agent_table_na = agent_table[agent_table[:, 4] == -1, :]
+        agent_table_na = np.copy(agent_table[agent_table[:, 4] == -1, :])
         time_table = np.zeros((agent_table_na.shape[0], m))
         time_without_new_agent = np.zeros((1, m))
         for kk in range(np.shape(agent_table_na)[0]):
             for mm in range(m):
-                # Combine new one with already-assigned agents
                 agent_ = agent_table[agent_table[:, 4] == mm, :]
+
+                if (agent_.size != 0):
+                    # Time without new agent
+                    intervals, _, _ = nat_approx(
+                        src_table[src_table[:, 0] == mm, :],
+                        tgt_table[src_table[:, 0] == mm, :],
+                        np.copy(agent_))
+                    time_without_new_agent[0, mm] = intervals[-1]
+
+                # Combine new one with already-assigned agents
                 agent = agent_table_na[kk, :].reshape((1, 5))
                 agent = np.concatenate((agent, agent_), 0)
                 intervals, _, _ = nat_approx(
@@ -466,9 +519,16 @@ def silly_approx(scenario, ani1, ani2):
                 for mm in range(m):
                     all_comb_time[c, mm] = time_table[combs[c][mm][1], combs[c][mm][0]]
 
+            # If there are multiple combinations with the same makespan, pick one with smallest average
             max_comb_time = np.max(all_comb_time, axis=1)
             best_comb_ind = np.argmin(max_comb_time)
-            best_comb = combs[best_comb_ind]
+            best_comb_ind = np.asarray(np.where(max_comb_time == max_comb_time[best_comb_ind]))
+            best_comb_time = np.average(all_comb_time[best_comb_ind, :].reshape((best_comb_ind.size, m)), axis=1)
+            combs = np.asarray(combs)[best_comb_ind, :, :].reshape((best_comb_ind.size, m, 2))
+            all_comb_time = all_comb_time[best_comb_ind, :].reshape((best_comb_ind.size, m))
+            best_comb_ind = np.argmin(best_comb_time)
+
+            best_comb = list(combs[best_comb_ind, :, :])
             best_time = all_comb_time[best_comb_ind, :]
             if (np.sum(best_time == best_time_) != m):
                 for mm in range(m):
@@ -486,22 +546,31 @@ def silly_approx(scenario, ani1, ani2):
 
             max_comb_time = np.max(all_comb_time, axis=1)
             best_comb_ind = np.argmin(max_comb_time)
-            best_comb = combs[best_comb_ind]
+            best_comb_ind = np.asarray(np.where(max_comb_time == max_comb_time[best_comb_ind]))
+            best_comb_time = np.average(all_comb_time[best_comb_ind, :].reshape((best_comb_ind.size, m)), axis=1)
+            combs = np.asarray(combs)[best_comb_ind, :, :].reshape((best_comb_ind.size, agent_table_na.shape[0], 2))
+            all_comb_time = all_comb_time[best_comb_ind, :].reshape((best_comb_ind.size, m))
+            best_comb_ind = np.argmin(best_comb_time)
+
+            best_comb = combs[best_comb_ind, :]
 
             best_time = all_comb_time[best_comb_ind, :]
+
+            if (len(best_comb.shape) == 1):
+                best_comb = np.expand_dims(best_comb, axis=0)
 
             # If there is no change between this loop and the previous loop
             # It means that all of the unused are agents do not help
             # We can stop the algorithm then
             no_change = True
             for c in range(len(best_comb)):
-                if best_time[c] != best_time_[best_comb[c][1]]:
+                if best_time[best_comb[c][1]] != best_time_[best_comb[c][1]]:
                     no_change = False
 
             if not no_change:
                 for kk in range(agent_table_na.shape[0]):
-                    if best_time[kk] < best_time_[best_comb[kk][1]]:
-                        agent_table[agent_table_na[kk, 0].astype(int), best_comb[kk][1]] = best_comb[kk][1]
+                    if best_time[kk] < best_time_[kk]:
+                        agent_table[agent_table_na[best_comb[kk][0], 0].astype(int), 4] = best_comb[kk][1]
                         best_time_[best_comb[kk][1]] = best_time[kk]
 
         if (np.sum(agent_table_ == agent_table) == agent_table.size):
@@ -520,11 +589,11 @@ def silly_approx(scenario, ani1, ani2):
 
 def create_line_anis(e, color):
     line_anis = []
-    for i in range(len(e['to'])-1):
+    for i in range(len(e['to']) - 1):
         p0 = e['to'][i]
-        p1 = e['to'][i+1]
+        p1 = e['to'][i + 1]
         t0 = e['ts'][i]
-        t1 = e['ts'][i+1]
+        t1 = e['ts'][i + 1]
         line_anis.append({
             'p': [p0, p1],
             't': [t0, t1],
@@ -540,17 +609,17 @@ def events_to_anis(events):
     max_speed = np.max(speeds)
     line_anis = []
     for i in range(len(events)):
-        if (i == 28):
-            abc = 1
         e = events[i]
-        color = [0, 0, e['v'] / max_speed]
+        np.random.seed(int(e['id']))
+
+        #color = [0, 0, e['v'] / max_speed]
+        color = [np.random.rand(), np.random.rand(), e['v'] / max_speed]
         line_ani = create_line_anis(e, color)
         line_anis += line_ani
     return line_anis
 
 
 def draw_scenario(scenario, events, fig, ax):
-
     ax.axis('equal')
     for i in range(len(scenario['packages'])):
         p = scenario['packages'][i]
@@ -568,16 +637,20 @@ def draw_scenario(scenario, events, fig, ax):
         ax.scatter(a['loc'][0], a['loc'][1], color=color)
         ax.annotate('%.2f' % a['v'], (a['loc'][0] + 0.5, a['loc'][1]))
 
+    plt.waitforbuttonpress()
+
     line_anis = events_to_anis(events)
     global_t0 = time.time()
     prev_t = 0
 
+    min_x = ax.get_xlim()[0]
     max_x = ax.get_xlim()[1]
     max_y = ax.get_ylim()[1]
     time_text = ax.annotate('%.2f' % prev_t,
-                            (max_x - 0.5, max_y - 2.5))
+                            (max_x - (max_x - min_x)*0.1, max_y - 1.5))
 
-    v2 = np.sqrt(np.sum((line_anis[1]['p'][1] - line_anis[1]['p'][0]) ** 2)) / (line_anis[1]['t'][1] - line_anis[1]['t'][0])
+    v2 = np.sqrt(np.sum((line_anis[1]['p'][1] - line_anis[1]['p'][0]) ** 2)) / (
+                line_anis[1]['t'][1] - line_anis[1]['t'][0])
 
     ani_done = False
     while not ani_done:
@@ -608,14 +681,16 @@ def draw_scenario(scenario, events, fig, ax):
 
             # Draw the segment from prev_t to curr_t
             line_duration = line_ani['t'][1] - line_ani['t'][0]
-            old_p = ((prev_t - line_ani['t'][0]) / line_duration) * (line_ani['p'][1] - line_ani['p'][0]) + line_ani['p'][0]
+            old_p = ((prev_t - line_ani['t'][0]) / line_duration) * (line_ani['p'][1] - line_ani['p'][0]) + \
+                    line_ani['p'][0]
             old_p = old_p.flatten()
-            new_p = ((next_t - line_ani['t'][0]) / line_duration) * (line_ani['p'][1] - line_ani['p'][0]) + line_ani['p'][0]
+            new_p = ((next_t - line_ani['t'][0]) / line_duration) * (line_ani['p'][1] - line_ani['p'][0]) + \
+                    line_ani['p'][0]
             new_p = new_p.flatten()
 
             ax.plot([old_p[0], new_p[0]], [old_p[1], new_p[1]], color=line_ani['c'])
 
-        plt.pause(0.001)
+        plt.pause(0.0001)
 
         fig.canvas.draw()
         plt.show(block=False)
@@ -631,9 +706,100 @@ def preprocess_events(events):
         events[i]['ts'] = [0] + events[i]['ts']
 
 
+def cpp_approx(f, overall_time_re):
+    exe_path = r'../Debug/ndrones.exe '
+    out_path = './result/data/multi_package/cpp_out'
+    cmd_opts = "-g 0 -i " + f + " -o " + out_path
+    s = str(subprocess.check_output(exe_path + cmd_opts))
+    overall_time = overall_time_re[0].search(s)
+    overall_time = overall_time.group(0)
+    overall_time = overall_time_re[1].search(overall_time)
+    overall_time = float(overall_time.group(0))
+    return overall_time
+
+
+def plot_result(all_makespan, fig, ax):
+    x = range(len(all_makespan))
+    all_makespan = np.asarray(all_makespan)
+    ax.plot(x, all_makespan[:, 2], color='b', label='Approx 1')
+    ax.plot(x, all_makespan[:, 0], color = 'r', label='Approx 2 w/o sharing')
+    ax.plot(x, all_makespan[:, 1], color='g', label='Approx 2 w. sharing')
+    ax.legend()
+    fig.canvas.draw()
+    plt.show(block=True)
+
+    abc = 1
+
+
+def txt_to_json(file_path, out_path):
+    with open(file_path, 'r') as f:
+        s = f.readlines()
+
+    agents = []
+    packages = []
+
+    del s[0:2]
+    i = 0
+    line = s[i]
+    m = int(line)
+
+    for mm in range(m):
+        src = s[i+mm+1].split()
+        tgt = s[i+mm+m+3].split()
+        xs = float(src[0])
+        ys = float(src[1])
+        id = float(src[2])
+        xt = float(tgt[0])
+        yt = float(tgt[1])
+        packages.append({
+            'id': id,
+            's': [xs, ys],
+            't': [xt, yt]
+        })
+
+    i += (m*2 + 3)
+    k = int(s[i])
+    for kk in range(k):
+        agt = s[i+kk+1].split()
+        loc = [float(agt[0]), float(agt[1])]
+        v = float(agt[2])
+        agents.append({
+            'id': kk,
+            'loc': loc,
+            'v': v
+        })
+
+    scenario = {
+        'packages': packages,
+        'agents': agents,
+        'k': k,
+        'm': m
+    }
+
+    with open(out_path, 'w') as f:
+        scenario_dict = {'scenario': scenario}
+        f.write(json.dumps(scenario_dict))
+
+
+def run_demo(file_path):
+    with open(file_path, 'r') as f:
+
+
+        scenario = json.load(f)
+        scenario = scenario['scenario']
+        events1 = []    
+        events2 = []
+        makespan_wo_shared, makespan_w_shared = silly_approx(scenario, events1, events2)
+        print(makespan_wo_shared, makespan_w_shared)
+        preprocess_events(events1)
+        #draw_scenario(scenario, events1, fig, ax)
+        draw_scenario(scenario, events2, fig, ax)
+
+
 if __name__ == '__main__':
     np.random.seed(13111991)
-    save_path = './data/multi_package/%04d'
+    input_path = './data/multi_package/%04d'
+    save_path = './result/data/multi_package/' + 'out1.txt'
     n_ex = 20  # for each k
 
     min_x = -20.0
@@ -646,27 +812,52 @@ if __name__ == '__main__':
     k_list = [4, 6, 8]
 
     file_counter = 0
-    # for k in k_list:
-    #     for i in range(n_ex):
-    #         scenario = gen(min_x, max_x, min_y, max_y, min_speed, max_speed, m, k)
-    #         save_path_c = save_path % file_counter
-    #         write_input_file(scenario, save_path_c)
-    #         file_counter += 1
+
+    #for k in k_list:
+    #    for i in range(n_ex):
+    #        scenario = gen(min_x, max_x, min_y, max_y, min_speed, max_speed, m, k)
+    #        write_input_file(scenario, input_path % file_counter)
+    #        file_counter += 1
+
 
     plt.ion()
     fig, ax = plt.subplots(1, 1)
-    # 47
-    for ex in range(47, n_ex * len(k_list)):
-        load_path_c = save_path % ex + '.json'
-        scenario = {}
-        with open(load_path_c, 'r') as f:
-            scenario = json.load(f)
-        scenario = scenario['scenario']
-        events1 = []
-        events2 = []
-        silly_approx(scenario, events1, events2)
+    #47
+    # overall_time_re = [re.compile("Overall time: [-+]?[0-9]*\.?[0-9]+"), re.compile("[-+]?[0-9]*\.?[0-9]+")]
+    #
+    # all_makespan = []
+    # for ex in range(0, n_ex * len(k_list)):
+    #     if ((ex+1) % 10 == 0):
+    #         print(ex + 1)
+    #     load_path_c = input_path % ex + '.json'
+    #     load_path_t = input_path % ex + '.txt'
+    #     scenario = {}
+    #     with open(load_path_c, 'r') as f:
+    #         scenario = json.load(f)
+    #     scenario = scenario['scenario']
+    #     events1 = []
+    #     events2 = []
+    #     makespan_wo_shared, makespan_w_shared = silly_approx(scenario, events1, events2)
+    #     preprocess_events(events1)
+    #     #draw_scenario(scenario, events1, fig, ax)
+    #     #draw_scenario(scenario, events2, fig, ax)
+    #     cpp_makespan = cpp_approx(load_path_t, overall_time_re)
+    #     print(makespan_wo_shared, makespan_w_shared, cpp_makespan)
+    #     all_makespan.append([makespan_wo_shared, makespan_w_shared, cpp_makespan])
+    #
+    # with open(save_path, 'w') as f:
+    #     f.write('silly_wo_share silly_w_share cpp' + '\n')
+    #     for makespan in all_makespan:
+    #         f.write('%.5f %.5f %.5f\n' % (makespan[0], makespan[1], makespan[2]))
+    #
+    #     all_makespan = np.asarray(all_makespan)
+    #     speed_up = all_makespan[:, 2] / all_makespan[:, 1]
+    #     msu = np.mean(speed_up)
+    #     stdsu = np.std(speed_up)
+    #     f.write('Average speed up vs cpp:\nmean %.5f\nstd %.5f\n' % (msu, stdsu))
+    #
+    # plot_result(all_makespan, fig, ax)
 
-        preprocess_events(events1)
-        #draw_scenario(scenario, events1, fig, ax)
-        draw_scenario(scenario, events2, fig, ax)
-        abc = 1
+    #txt_to_json('./data/demo/demo4.txt', './data/demo/demo4.json')
+    #run_demo('./data/demo/demo4.json')
+    run_demo('./data/multi_package/0049.json')
