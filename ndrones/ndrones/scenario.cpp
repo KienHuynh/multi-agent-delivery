@@ -39,8 +39,12 @@ bool Scenario::isPackage(int id, std::vector<DesignatedPoint> _packages) {
 Color Scenario::agentQueueColorMap(std::vector<Agent> _agents) {
 	int seed = 0;
 	for (int i = 0; i < _agents.size(); i++) {
-		seed += _agents[i].ID*_agents[i].loc.x + _agents[i].loc.y;
+		seed += _agents[i].ID*_agents[i].loc.x + _agents[i].loc.y + 13;
 	}
+	/*if (_agents.size() > 0) {
+		seed = _agents[_agents.size() - 1].ID*_agents[_agents.size() - 1].loc.x + _agents[_agents.size() - 1].loc.y + 13;
+	}*/
+	
 	srand(seed);
 	int id = (rand() + 1111) % cfg::numColor;
 	return Palette::palette[id];
@@ -439,7 +443,7 @@ void Scenario::ecld2DType0DynamicNM() {
 	overallTime = bestTimes[0];
 
 	makespan = points[bestTarget.gridRef].bestTime;
-	std::cout << makespan << std::endl;
+	std::cout << "Overall time: " << makespan << std::endl;
 }
 
 

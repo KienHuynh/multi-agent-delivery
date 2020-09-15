@@ -58,7 +58,8 @@ void ScenarioIO::loadDesignatedPoint(
 	int nDPoint) {
 
 	for (int i = 0; i < nDPoint; i++) {
-		int x, y, id;
+		float x, y;
+		int id;
 		if ((scenario.problemType & SINGLE_ID) != 0) {
 			myfile >> x >> y;
 			dPoints.push_back(DesignatedPoint(Point2D(x, y), -1));
@@ -103,7 +104,8 @@ void ScenarioIO::loadDesignatedPolygon(
 
 	std::vector<DesignatedPoint> vList;
 	for (int i = 0; i < nDPoint; i++) {
-		int x, y, id = -1;
+		float x, y;
+		int id = -1;
 		if ((scenario.problemType & (SINGLE_ID)) == SINGLE_ID) myfile >> x >> y;
 		else myfile >> x >> y >> id;
 		vList.push_back(DesignatedPoint(Point2D(x, y), id));
@@ -380,8 +382,6 @@ void ScenarioIO::loadFile(const char* fname, Scenario &scenario) {
 	myfile >> nObs;
 	loadObstacle(myfile, scenario, nObs);
 
-	
-
 	myfile.close();
 }
 
@@ -415,13 +415,15 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 // TODO: Don't generate points outside of the convex hull (?) for both grid method
 void ScenarioIO::generateAPGrid(std::ifstream &myFile, Scenario& scenario) {
 	float stepX, stepY;
-	myFile >> scenario.minX >> scenario.maxX >> stepX >> scenario.minY >> scenario.maxY >> stepY;
+	float minX, maxX, minY, maxY;
+	myFile >> minX >> maxX >> stepX >> minY >> maxY >> stepY;
 	if (cfg::stepX > 0) stepX = cfg::stepX;
 	if (cfg::stepY > 0) stepY = cfg::stepY;
 
-	for (float i = scenario.minX; i < scenario.maxX; i += stepX) {
-		for (float j = scenario.minY; j < scenario.maxY; j += stepY) {
+	for (float i = minX; i < maxX; i += stepX) {
+		for (float j = minY; j < maxY; j += stepY) {
 			scenario.points.push_back(PointState(Point2D(i, j)));
+			scenario.updateMinMaxXY(i, j);
 		}
 	}
 }

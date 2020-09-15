@@ -79,7 +79,7 @@ public:
 	// Max/min speed among the agents
 	float maxSpeed, minSpeed;
 	// Max/min x/y among the points
-	int minX, maxX, minY, maxY;
+	float minX, maxX, minY, maxY;
 	float makespan;
 
 	// Animation related members.

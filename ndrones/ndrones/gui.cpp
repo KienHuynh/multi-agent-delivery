@@ -129,7 +129,7 @@ void Canvas::computeColorMap() {
 	for (int i = 0; i < scenario.points.size(); i++) {
 		Color color(255, 255, 255);
 		if (gridVisMode == STPMAP) {
-			color = Scenario::agentQueueColorMap(scenario.agents);
+			color = Scenario::agentQueueColorMap(scenario.points[i].agentQueue);
 		}
 		if (gridVisMode == STIMEMAP) {
 			color = Scenario::bestTimeColorMap(s, l, scenario.points[i].bestTime);
@@ -669,7 +669,7 @@ void Canvas::drawGridPoints() {
 		float x = scenario.points[i].p.x;
 		float y = scenario.points[i].p.y;
 		scenToCanvasCoord(x, y);
-		fl_pie(((int)x) - 2.5, ((int)y) - 2.5, 5, 5, 0, 360);
+		fl_pie(((int)x) - 2.5, ((int)y) - 2.5, 4, 4, 0, 360);
 	}
 }
 
