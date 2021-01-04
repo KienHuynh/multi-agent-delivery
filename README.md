@@ -8,6 +8,8 @@ Two agents can exchange a package. Agents can have different speed.
 
 ### ===========HOW TO COMPILE AND RUN===========
 
+Requirement: C++ 11
+
 Main source directory: ndrones/ndrones/
 
 Dependencies:
