@@ -1,11 +1,15 @@
 total_makespan
 sampling_point_size
-srt_dest_ID respective_makespan	// (1)
-num_agent_used
-agent_x agent_y agent_v
+srt_dest_ID respective_makespan		// One of the (possibly) many deliveries, each delivery is unique (1)
+num_agent_used						// Number of agents used for this particular delivery
+agent_ID agent_x agent_y agent_v	// x coord, y coord, and velocity of agent
 ...
-num_handoff_points
+...									// num_agent_used
+num_handoff_points					// number of handoffs occurred
 loc_x loc_y
 ...
-best_target_x best_target_y		// In case there might be multiple destinations sharing the same ID
-// repeat from (1) for all unique source - destination pairs
+...									// num_handoff_points
+// end of (1)
+
+
+// Notes repeat (1) for all unique source - destination pairs
