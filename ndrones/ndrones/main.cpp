@@ -5,7 +5,11 @@
 #include "gui.h"
 
 int main(int argc, char **argv) {
-	cxxopts::Options options("MyProgram", "One line description of MyProgram");
+	cxxopts::Options options(argv[0], "Options");
+    options
+      .positional_help("[optional args]")
+      .show_positional_help();
+      
 	options.add_options()
 		("g, gui", "Turning GUI on or not", cxxopts::value<int>())
 		("i, input", "Path to input file", cxxopts::value<std::string>())
