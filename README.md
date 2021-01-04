@@ -44,7 +44,7 @@ Input file: the format of an input file is described in ndrones/ndrones/inputDes
 Output file: same as input file.
 
 ### ===========PROBLEM DETAILS===========
-There are two main problems:
+**There are two main problems:**
 
 1 There are multiple agents, but there is only 1 destination to consider. These problems are depicted as 
 ```
@@ -59,7 +59,9 @@ on the top of each input file.
 TWODIM EUCLID DISCRETE
 ```
 
-Sources and targets can be points:
+**In each of these above problem types, we can specify two types of source/destination geometry.**
+
+They can be points:
 ```
 SINGLE_POINT
 ```
@@ -68,8 +70,7 @@ or polygons (regional):
 POLY
 ```
 
-Sampling method:
-
+**Sampling method:**
 The algorithm work on a discrete set of points. All of the handoffs occur on these points. The recommended sampling method is
 ```
 APGRID
