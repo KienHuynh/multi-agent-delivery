@@ -4,7 +4,7 @@ This is the repository for the following problem:
 
 Given n agents of different speeds, a package(s) from a source(s) and a destination(s), find a way for the agents to deliver the package to the destination as fast as possible.
 
-Two agents can exchange a package. Agents can have different speed.
+Two agents can exchange a package. Agents can have different speed. Each agent can carry at most one package and they have unlimited battery/fuel in the delivery.
 
 ### ===========HOW TO COMPILE AND RUN===========
 
@@ -41,7 +41,7 @@ To test if the program is running correctly, run it with the ndrones/ndrones/tes
 
 Input file: the format of an input file is described in ndrones/ndrones/inputDescription.txt
 
-Output file: same as input file.
+Output file: ndrones/ndrones/outputDescription.txt
 
 ### ===========PROBLEM DETAILS===========
 **There are two main problems:**
