@@ -75,7 +75,23 @@ x2 y2 sy
 Which create a grid from (x1, y1) to (x2, y2) in which any two adjacent points are spaced by sx/sy along the x/y direction.
 
 ### ===========VISUALIZATION (GUI MODE)===========
-![](viz_aid/figs/gui/animation1.gif?raw=true)
+<img src="viz_aid/figs/gui/animation1.gif" width="400" height="400"/>
 
 The main GUI:
-![](viz_aid/figs/gui/1.jpg?raw=true  =100x100)
+
+<img src="viz_aid/figs/gui/1.jpg" width="700"/>
+
+
+* Sources are drawn in red. Destinations are drawn in green.
+* All agents are drawn in either black or blue. The bluer some agents are, the faster they are in term of speed. The number next to each of them is their speed (units/second).
+
+* To solve the problem with loaded input. Hit "Solve.
+* To animate the delivery, check "Animate drones path" and hit Animate.
+* To animate the path of the package, check "Animate package path".
+
+<img src="viz_aid/figs/gui/2.jpg" width="700"/>
+
+The grid points that was sampled can be visualized with "Visualize grid" button. This does not work with multiple targets of different IDs.
+* Shortest path map: points will be colored into different regions. Each region of the same color has the same agents solution.
+* Depot usage map: each region of the same color uses the same depot in the optimal solution.
+* Shortest time map: depicts the heat map of delivery time from some depots to each point.
