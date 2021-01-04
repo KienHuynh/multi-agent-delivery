@@ -8,6 +8,8 @@ Two agents can exchange a package. Agents can have different speed.
 
 ### ===========HOW TO COMPILE AND RUN===========
 
+Main source directory: ndrones/ndrones/
+
 Dependencies:
 
 * FLTK 1.3.5
