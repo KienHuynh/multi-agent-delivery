@@ -255,47 +255,6 @@ void ScenarioIO::loadObstacle(std::ifstream &myfile,
 				ps.obIndex = oi;
 				scenario.points.push_back(ps);
 			}
-			
-			//float length = Point2D::l2Distance(p0, p1);
-			//int nNewPoint_i = (int) (length * nNewPoint / o.perimeter);
-			//for (int j = 0; j < nNewPoint_i; j++) {
-			//	float ratio = ((float)(j + 1)) / ((float)(nNewPoint_i + 2));
-			//	float newX = p0.x + ratio * (p1.x - p0.x);
-			//	float newY = p0.y + ratio * (p1.y - p0.y);
-			//	Point2D newP(newX, newY);
-
-			//	/*float eps = o.perimeter / 100;
-			//	for (int r = 0; r < 4; r++) {
-			//		Point2D newPtmp = newP;
-			//		if (r == 0) {
-			//			newPtmp.x += eps;
-			//			newPtmp.y += eps;
-			//		}
-			//		if (r == 1) {
-			//			newPtmp.x -= eps;
-			//			newPtmp.y += eps;
-			//		}
-			//		if (r == 2) {
-			//			newPtmp.x += eps;
-			//			newPtmp.y -= eps;
-			//		}
-			//		if (r == 3) {
-			//			newPtmp.x -= eps;
-			//			newPtmp.y -= eps;
-			//		}
-			//		if (!o.contain(newPtmp)) {
-			//			newP = newPtmp;
-			//			break;
-			//		}
-			//	}*/
-
-			//	if (!scenario.containPoint(newP)) {
-			//		PointState ps(Point2D(newX, newY));
-			//		ps.isOb = true;
-			//		// ps.obIndex = oi;
-			//		scenario.points.push_back(ps);
-			//	}
-			//}
 		}
 	}
 
@@ -390,24 +349,26 @@ void ScenarioIO::writeSolution(const char *outputFile, Scenario scenario) {
 	std::ofstream myfile;
 	myfile.open(outputFile);
 
-	// TODO
-	/*myfile << scenario.overallTime << std::endl;
+
+	myfile << scenario.overallTime << std::endl;
 	myfile << scenario.points.size() << std::endl;
 	for (int a = 0; a < scenario.activeID.size(); a++) {
 		int pairID = scenario.activeID[a];
 		myfile << pairID << " " << scenario.bestTimes[a] << std::endl;
 		myfile << scenario.bestAgentQueues[a].size() << std::endl;
 		for (int k = 0; k < scenario.bestAgentQueues[a].size(); k++) {
-			myfile << scenario.bestAgentQueues[a][k].loc0.x << " " << 
+			myfile << scenario.bestAgentQueues[a][k].ID << " " <<
+				scenario.bestAgentQueues[a][k].loc0.x << " " << 
 				scenario.bestAgentQueues[a][k].loc0.y << " " <<
-				scenario.bestAgentQueues[a][k].v << std::endl;
+				scenario.bestAgentQueues[a][k].v << " " <<
+				scenario.bestAgentQueues[a][k].delay << std::endl;
 		}
 		myfile << (scenario.bestPointQueues[a].size() + 1) << std::endl;
 		for (int p = 0; p < scenario.bestPointQueues[a].size(); p++) {
 			myfile << scenario.bestPointQueues[a][p].x << " " << scenario.bestPointQueues[a][p].y << std::endl;
 		}
-		myfile << scenario.bestTargets[a].loc.x << " " << scenario.bestTargets[a].loc.y << std::endl;
-	}*/
+		// myfile << scenario.bestTargets[a].loc.x << " " << scenario.bestTargets[a].loc.y << std::endl;
+	}
 
 	myfile.close();
 }

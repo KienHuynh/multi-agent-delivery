@@ -28,7 +28,7 @@ enum ProblemType {
 	UNKNOWN = 0,
 	ONEDIM = 1,
 	TWODIM = 2,
-	EUCLID = 4,
+	EUCLID = 4,		
 	GRAPH = 8,
 	DISCRETE = 16,
 	// CONTINUOUS: 5th bit = 0
