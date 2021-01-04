@@ -677,7 +677,6 @@ void Canvas::drawGridPoints() {
 void Canvas::draw() {
 
 	if (GUI::bigRedrawSignal) {
-		// Not sure how do you clear drawn objects in FLTK so I just draw a white rectangle instead
 		fl_color(255);
 		fl_rectf(0, 0, Canvas::canvasWidth + 100, Canvas::canvasHeight + 100);
 		GUI::bigRedrawSignal = 0;

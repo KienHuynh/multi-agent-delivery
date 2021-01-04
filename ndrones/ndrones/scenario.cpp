@@ -41,9 +41,6 @@ Color Scenario::agentQueueColorMap(std::vector<Agent> _agents) {
 	for (int i = 0; i < _agents.size(); i++) {
 		seed += _agents[i].ID*_agents[i].loc.x + _agents[i].loc.y + 13;
 	}
-	/*if (_agents.size() > 0) {
-		seed = _agents[_agents.size() - 1].ID*_agents[_agents.size() - 1].loc.x + _agents[_agents.size() - 1].loc.y + 13;
-	}*/
 	
 	srand(seed);
 	int id = (rand() + 1111) % cfg::numColor;
