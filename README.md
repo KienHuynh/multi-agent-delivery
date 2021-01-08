@@ -24,11 +24,29 @@ Dependencies:
     * fltkimagesd.lib
     * fltkjpegd.lib
     * fltkpngd.lib
-    * fltkzlibd.lib
   * NOTE: these files were compiled in for Windows using Visual Studio 15 (2017). If you cannot compile with these, then you will need to download the source FLTK here https://www.fltk.org/software.php (1.3.5), unpack them and recompile these.
 * cxxopts
   * All include files are in ndrones/includes
   * No linking needed
+
+Compiling:
+
+The process to compile the no-gui file is pretty straightforward (only cxxopts is needed). To compile with GUI on:
+
+* On Windows (recommend using Visual Studio):
+  * Add the ndrones/includes/ directory to your include option
+  * Add the ndrones/lib/\*.lib files mentioned above when you compile
+
+* On Linux:
+  * Install flkt https://www.fltk.org/software.php , along with their helper tools fltk-config (included in the default setup)
+  * Add an include directory option (-I) to 'ndrones/include/' (Don't use their include directory as there are some small compiler errors)
+  * Add the ndrones/lib/ directory to your lib directory option (-L)
+  * Link the .a files
+  * The final build command would look like something as follow:
+  
+```
+g++ `fltk-config --cxxflags` main_gui.cpp gui.cpp scenario.cpp scenarioIO.cpp base.cpp util.cpp -I'../include/' -L'../lib/' `fltk-config --ldflags` -fpermissive -o ndrones
+```
 
 To run the program in the command line:
 ```
