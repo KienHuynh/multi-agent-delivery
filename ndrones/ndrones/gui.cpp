@@ -1,5 +1,11 @@
 #include "gui.h"
 
+#define sprintfx sprintf
+
+#ifdef _WIN32
+#define sprintfx sprintf_s
+#endif
+
 int Canvas::canvasWidth = 0;
 int Canvas::canvasHeight = 0;
 int Canvas::canvasX = 0;
@@ -336,7 +342,7 @@ void Canvas::drawPie360(int x, int y, int dx, int dy, char str, int label) {
 	//if (GUI::zoomMode == ZoomMode::ALL) {
 		char s[80];
 		if (label < 0) return;
-		sprintf_s(s, "%d", label);
+		sprintfx(s, "%d", label);
 		fl_font(FL_HELVETICA, 18);
 		fl_draw(s, x + 5, y + 5);
 	//}
@@ -358,7 +364,7 @@ void Canvas::drawCoords() {
 	float x = (float)Fl::event_x();
 	float y = (float)Fl::event_y();
 	canvasToScenCoord(x, y);
-	sprintf_s(s, "x=%.3f y=%.3f", x, y);
+	sprintfx(s, "x=%.3f y=%.3f", x, y);
 	// Black rect
 	fl_color(FL_BLACK);
 	fl_rectf(Canvas::canvasWidth - 180, this->y(), 180, 25);
@@ -443,7 +449,7 @@ void Canvas::drawPackages() {
 			fl_color(0, 0, 0);
 			if (scenario.packages[i].ID >= 0 && i == 0) {
 				char s[80];
-				sprintf_s(s, "%d", scenario.packages[i].ID);
+				sprintfx(s, "%d", scenario.packages[i].ID);
 				fl_font(FL_HELVETICA, 18);
 				fl_draw(s, x0 + 5, y0 + 5);
 			}
@@ -465,7 +471,7 @@ void Canvas::drawTargets() {
 			fl_color(0, 0, 0);
 			if (scenario.targets[i].ID >= 0) {
 				char s[80];
-				sprintf_s(s, "%d", scenario.targets[i].ID);
+				sprintfx(s, "%d", scenario.targets[i].ID);
 				fl_font(FL_HELVETICA, 18);
 				fl_draw(s, x + 5, y + 5);
 			}
@@ -489,7 +495,7 @@ void Canvas::drawTargets() {
 			fl_color(0, 0, 0);
 			if (scenario.targets[i].ID >= 0 && i == 0) {
 				char s[80];
-				sprintf_s(s, "%d", scenario.targets[i].ID);
+				sprintfx(s, "%d", scenario.targets[i].ID);
 				fl_font(FL_HELVETICA, 18);
 				fl_draw(s, x0 + 5, y0 + 5);
 			}
