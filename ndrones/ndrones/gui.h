@@ -10,7 +10,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Group.H>
-#include <FL/Fl_Draw.H>
+#include <FL/fl_draw.H>
 #include <FL/Fl_Browser.H>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_Box.H>
@@ -38,7 +38,7 @@ enum GridVisualizationMode {UNDEFINED, STPMAP, STIMEMAP, DEPOTUSAGEMAP};
 enum ZoomMode {ST, ALL};
 
 // The main class that display images and drawings
-class Canvas : public Fl_Group {
+class Canvas : public Fl_Box {
 protected:
 	// Callback function that handles events through message e, inherited from the group class of FLTK
 	int handle(int e);
