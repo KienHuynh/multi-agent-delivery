@@ -14,7 +14,7 @@ Main source directory: ndrones/ndrones/
 
 Dependencies:
 
-* FLTK 1.3.5
+* FLTK 1.3.5 (If you want to use main_gui.cpp, if you use main_no_gui.cpp these won't be needed)
   * All include files are in ndrones/includes/
   * All necessary lib files for linking are in ndrones/lib/
   * Dependencies needed to compile:
@@ -34,7 +34,7 @@ To run the program in the command line:
 ```
 ndrones.exe -g [0|1] -i [input_path] -o [output_path]
 
-# -g: turning on GUI (1), or off (0)
+# -g: turning on GUI (1), or off (0). Only needed when building from main_gui.cpp
 # input_path: full or relative path to input file
 # output_path: full or relative path to output file you want to write
 ```
