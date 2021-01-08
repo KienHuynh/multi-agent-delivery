@@ -1136,18 +1136,6 @@ void Scenario::ecld2DType1DynamicNM() {
 }
 
 
-void LineAnimation::setColor(int c0, int c1, int c2) {
-	color[0] = c0;
-	color[1] = c1;
-	color[2] = c2;
-}
-
-
-LineAnimation::LineAnimation() {
-	prevTimer = -1;
-}
-
-
 void Scenario::createDroneAnimation() {
 	if ((problemType & (TWODIM | EUCLID | DISCRETE)) == (TWODIM | EUCLID | DISCRETE)) {
 		for (int a = 0; a < activeID.size(); a++) {

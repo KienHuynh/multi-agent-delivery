@@ -678,3 +678,17 @@ std::vector<size_t> argSort(const std::vector<PointState> &v) {
 
 	return idx;
 }
+
+
+
+void LineAnimation::setColor(int c0, int c1, int c2) {
+	color[0] = c0;
+	color[1] = c1;
+	color[2] = c2;
+}
+
+
+LineAnimation::LineAnimation() {
+	prevTimer = -1;
+	active = false;
+}
