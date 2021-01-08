@@ -2,9 +2,9 @@
 #include "scenario.h"
 
 
-class Scenario;
 enum ProblemType;
 enum DesignatedPointInputMode;
+class Scenario;
 
 
 // APGRID: axis-parallel grid

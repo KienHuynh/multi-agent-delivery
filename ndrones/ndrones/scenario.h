@@ -12,9 +12,6 @@
 #include "scenarioIO.h"
 
 
-class ScenarioIO;
-
-
 enum DesignatedPointInputMode {
 	SINGLE_POINT, POLY
 };
