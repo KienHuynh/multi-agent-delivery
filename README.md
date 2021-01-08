@@ -38,7 +38,7 @@ The process to compile the no-gui file is pretty straightforward (only cxxopts i
   * Add the ndrones/lib/\*.lib files mentioned above when you compile
 
 * On Linux:
-  * Install flkt https://www.fltk.org/software.php , along with their helper tools fltk-config (included in the default setup)
+  * Install FLTK 1.3.5 https://www.fltk.org/software.php , along with their helper tools fltk-config (included in the default setup)
   * Add an include directory option (-I) to 'ndrones/include/' (Don't use their include directory as there are some small compiler errors)
   * Add the ndrones/lib/ directory to your lib directory option (-L)
   * Link the .a files
