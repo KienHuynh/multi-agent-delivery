@@ -26,7 +26,7 @@
 
 #  include "Enumerations.H"
 
-#  ifdef WIN32
+#  ifdef _WIN32
 #    include "win32.H"
 #  elif defined(__APPLE__)
 #    include "mac.H"

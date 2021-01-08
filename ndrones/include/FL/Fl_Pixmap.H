@@ -22,7 +22,7 @@
 #ifndef Fl_Pixmap_H
 #define Fl_Pixmap_H
 #  include "Fl_Image.H"
-#if defined(WIN32)
+#if defined(_WIN32)
 #  include "x.H"
 #endif
 
@@ -59,19 +59,19 @@ class FL_EXPORT Fl_Pixmap : public Fl_Image {
   
   private:
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #if FLTK_ABI_VERSION < 10301
   static // a static member is needed for ABI compatibility
 #endif
   UINT pixmap_bg_color; // RGB color used for pixmap background
-#endif // WIN32
-#if defined(__APPLE__) || defined(WIN32)
+#endif // _WIN32
+#if defined(__APPLE__) || defined(_WIN32)
   void *id_; // for internal use
   void *mask_; // for internal use (mask bitmap)
 #else
   unsigned id_; // for internal use
   unsigned mask_; // for internal use (mask bitmap)
-#endif // __APPLE__ || WIN32
+#endif // __APPLE__ || _WIN32
   
   public:
 

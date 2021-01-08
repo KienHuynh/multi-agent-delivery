@@ -22,7 +22,7 @@
 #ifndef Fl_Window_H
 #define Fl_Window_H
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -100,7 +100,7 @@ class FL_EXPORT Fl_Window : public Fl_Group {
     const void *legacy_icon;
     Fl_RGB_Image **icons;
     int count;
-#ifdef WIN32
+#ifdef _WIN32
     HICON big_icon;
     HICON small_icon;
 #endif
@@ -147,7 +147,7 @@ public:
    \see void shape(const Fl_Image* img)
    */
   inline void shape(const Fl_Image& b) { shape(&b); }
-#if ! (defined(WIN32) || defined(__APPLE__) || defined(FL_DOXYGEN))
+#if ! (defined(_WIN32) || defined(__APPLE__) || defined(FL_DOXYGEN))
   void combine_mask(void);
 #endif
 private:
@@ -468,7 +468,7 @@ public:
   void icon(const Fl_RGB_Image*);
   void icons(const Fl_RGB_Image*[], int);
 
-#ifdef WIN32
+#ifdef _WIN32
   static void default_icons(HICON big_icon, HICON small_icon);
   void icons(HICON big_icon, HICON small_icon);
 #endif

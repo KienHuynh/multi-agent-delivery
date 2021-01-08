@@ -49,7 +49,7 @@ FL_EXPORT extern Fl_Graphics_Driver *fl_graphics_driver;
 typedef void (*Fl_Draw_Image_Cb)(void* data,int x,int y,int w,uchar* buf);
 
 // typedef what the x,y fields in a point are:
-#ifdef WIN32
+#ifdef _WIN32
 typedef int COORD_T;
 #  define XPOINT XPoint
 #elif defined(__APPLE__)
@@ -128,7 +128,7 @@ private:
   int rstackptr;
   static const int region_stack_max = FL_REGION_STACK_SIZE - 1;
   Fl_Region rstack[FL_REGION_STACK_SIZE];
-#ifdef WIN32
+#ifdef _WIN32
   int numcount;
   int counts[20];
 #endif
@@ -450,7 +450,7 @@ public:
   void copy_offscreen(int x, int y, int w, int h, Fl_Offscreen pixmap, int srcx, int srcy);
 };
 #endif
-#if defined(WIN32) || defined(FL_DOXYGEN)
+#if defined(_WIN32) || defined(FL_DOXYGEN)
 /**
  \brief The MSWindows-specific graphics class.
  *
@@ -498,7 +498,7 @@ public:
   int draw_scaled(Fl_Image *img, int XP, int YP, int WP, int HP);
 };
 #endif
-#if !(defined(__APPLE__) || defined(WIN32))
+#if !(defined(__APPLE__) || defined(_WIN32))
 /**
  \brief The Xlib-specific graphics class.
  *
