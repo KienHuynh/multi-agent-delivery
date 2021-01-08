@@ -4,7 +4,7 @@ This is the repository for the following problem:
 
 Given n agents of different speeds, a package(s) from a source(s) and a destination(s), find a way for the agents to deliver the package to the destination as fast as possible.
 
-Two agents can exchange a package. Agents can have different speed. Each agent can carry at most one package and they have unlimited battery/fuel in the delivery.
+Two agents can exchange a package. Agents can have different speeds. Each agent can carry at most one package and they have unlimited battery/fuel in the delivery.
 
 ### ===========HOW TO COMPILE AND RUN===========
 
@@ -25,6 +25,7 @@ Dependencies:
     * fltkjpegd.lib
     * fltkpngd.lib
     * fltkzlibd.lib
+  * NOTE: these files were compiled in for Windows using Visual Studio 15 (2017). If you cannot compile with these, then you will need to download the source FLTK here https://www.fltk.org/software.php (1.3.5), unpack them and recompile these.
 * cxxopts
   * All include files are in ndrones/includes
   * No linking needed
