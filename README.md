@@ -25,6 +25,7 @@ Dependencies:
     * fltkjpegd.lib
     * fltkpngd.lib
     * fltkzlibd.lib
+  * NOTE: these files were compiled in for Windows using Visual Studio 15 (2017). If you cannot compile with these, then you will need to download the source FLTK here https://www.fltk.org/software.php (1.3.5), unpack them and recompile these.
 * cxxopts
   * All include files are in ndrones/includes
   * No linking needed
