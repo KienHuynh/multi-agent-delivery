@@ -12,30 +12,6 @@
 #include "scenarioIO.h"
 
 
-enum DesignatedPointInputMode {
-	SINGLE_POINT, POLY
-};
-
-
-// TODO: consider the following case
-// There are multiple targets and IDs, some of the targets might have shared IDs. 
-// We must deliver the package (does not matter where they come from) to EACH of these target.
-// Currently, if there are 2 targets of ID 1, as long as the package is delivered to one of them, it's fine.
-enum ProblemType {
-	UNKNOWN = 0,
-	ONEDIM = 1,
-	TWODIM = 2,
-	EUCLID = 4,		
-	GRAPH = 8,
-	DISCRETE = 16,
-	// CONTINUOUS: 5th bit = 0
-	SINGLE_TARGET = 32,
-	//MULTI_TARGET: 6th bit = 0
-	SINGLE_ID = 64 // This means that there is one ID (-1) among all sources and targets
-	// MULTI_ID: 7th bit = 0
-};
-
-
 // The core class of the project
 // Store the scenario: data points, designated points (packages, targets), agents
 // Include the solvers to the problems and creation of animations
