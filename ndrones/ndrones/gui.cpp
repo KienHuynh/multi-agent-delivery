@@ -97,6 +97,7 @@ void GUI::saveResultCallback(Fl_Widget*w, void*data) {
 
 
 void GUI::solverCallback(Fl_Widget *w, void *data) {
+	std::cout << "Here\n";
 	Canvas::scenario.solve();
 	Canvas::scenario.aniStart = true;
 	canvas->redraw();
@@ -181,7 +182,7 @@ void GUI::gridVisRadioCallback(Fl_Widget*w, void*data) {
 void Canvas::timerCallback(void *userData) {
 	Canvas *o = (Canvas*)userData;
 	o->redraw();
-	Fl::repeat_timeout(0.001, timerCallback, userData);
+	Fl::repeat_timeout(0.01, timerCallback, userData);
 }
 
 
@@ -192,7 +193,7 @@ void Canvas::fl_normal_line(float x, float y, float x1, float y1) {
 
 // Function to handle mouse events such as drag, release, etc.
 int Canvas::handle(int e) {
-	int ret = Fl_Group::handle(e);
+	int ret = Fl_Box::handle(e);
 	switch (e) {
 	// Mouse events
 	case FL_DRAG: {
@@ -681,7 +682,6 @@ void Canvas::drawGridPoints() {
 
 
 void Canvas::draw() {
-
 	if (GUI::bigRedrawSignal) {
 		fl_color(255);
 		fl_rectf(0, 0, Canvas::canvasWidth + 100, Canvas::canvasHeight + 100);
@@ -689,7 +689,7 @@ void Canvas::draw() {
 	}
 
 	// Let group draw itself
-	Fl_Group::draw();
+	Fl_Box::draw();
 	{
 		static int redraws = 0;
 		fl_color(FL_BLACK);
@@ -704,11 +704,10 @@ void Canvas::draw() {
 	drawPackages();
 	drawTargets();
 	drawAnimation();
-	
 }
 
 
-Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Group(X, Y, W, H, L) {
+Canvas::Canvas(int X, int Y, int W, int H, const char *L = 0) : Fl_Box(X, Y, W, H, L) {
 	canvas = new float**[H];
 
 	// Create a white background
